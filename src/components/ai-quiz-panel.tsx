@@ -15,6 +15,7 @@ export function AiQuizPanel({
   const [transcript, setTranscript] = useState("");
   const [count, setCount] = useState(5);
   const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [provider, setProvider] = useState<"auto"|"gemini"|"openrouter"|"grok">("auto");
   const [generated, setGenerated] = useState<GeneratedQuestion[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ export function AiQuizPanel({
       const response = await fetch(`/api/instructor/quizzes/${quizId}/ai-drafts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, count: Math.min(count, countLimit), difficulty }),
+        body: JSON.stringify({ transcript, count: Math.min(count, countLimit), difficulty, provider }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Could not generate questions.");
@@ -38,7 +39,7 @@ export function AiQuizPanel({
       setGenerated(questions);
       setSelected(questions.map((_, index) => index));
       setTranscript("");
-      setMessage(`${questions.length} suggestions generated. Check the facts and answer keys before using them.`);
+      setMessage(`${questions.length} suggestions generated with ${body.provider ?? provider}. Check facts and answers before using them.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation unavailable.");
     } finally { setLoading(false); }
@@ -80,6 +81,16 @@ export function AiQuizPanel({
             onChange={event => setCount(Math.max(1, Math.min(20, Number(event.target.value) || 1)))}
             disabled={disabled || loading || !availableSlots}/>
           <small>1–20 per request · {availableSlots} slots left</small>
+        </label>
+        <label>AI provider
+          <select value={provider} disabled={disabled || loading}
+            onChange={event=>setProvider(event.target.value as typeof provider)}>
+            <option value="auto">Automatic fallback</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="grok">xAI Grok</option>
+          </select>
+          <small>Automatic tries configured providers in order. Some providers charge per token.</small>
         </label>
         <label>Difficulty
           <select value={difficulty} disabled={disabled || loading}

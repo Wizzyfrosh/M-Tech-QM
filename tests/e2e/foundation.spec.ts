@@ -78,11 +78,16 @@ test("student self-registers and verifies; instructor approves and may later sus
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await expect(student).toHaveURL(/\/verify-email\?email=browser%40example.test/);
-  const otp = await mailCode(
+  await mailCode(
     "browser@example.test",
     "email-verification",
     verificationSentAfter,
   );
+  const resendSentAfter = Date.now();
+  await student.getByRole("button", { name: "Send a new code", exact: true }).click();
+  await expect(student.getByRole("status")).toContainText("Code requested.");
+  await expect(student.getByRole("button", { name: /Request another code in \d+s/ })).toBeDisabled();
+  const otp = await mailCode("browser@example.test", "email-verification", resendSentAfter);
 
   await expect(
     student.getByRole("heading", { name: "Verify your email", exact: true }),

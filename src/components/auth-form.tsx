@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useHydrated } from "@/lib/use-hydrated";
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -17,6 +18,7 @@ export function AuthForm({
   initialEmail?: string;
 }) {
   const hydrated = useHydrated();
+  const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +27,12 @@ export function AuthForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(value => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
   const isPassword = ["sign-in", "sign-up", "reset-password"].includes(mode);
   const labels = {
     "sign-in": "Sign in to your account",
@@ -72,10 +80,12 @@ export function AuthForm({
           setError(
             result.error.status >= 500
               ? "Your registration may have been saved, but we could not send the verification email. Open Verify email below to request a new code."
-              : (result.error.message || "Registration failed. Check your details and try again."),
+              : result.error.status === 429
+                ? "Too many code requests. Wait 10 minutes, then request a new code."
+                : (result.error.message || "Registration failed. Check your details and try again."),
           );
         else {
-          window.location.assign(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
+          router.push(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
           return;
         }
       } else if (mode === "verify-email") {
@@ -132,6 +142,7 @@ export function AuthForm({
     }
   }
   async function resend() {
+    if (busy || resendCooldown > 0) return;
     setBusy(true);
     setMessage("");
     setError("");
@@ -142,12 +153,17 @@ export function AuthForm({
       });
       if (result.error)
         setError(
-          "We couldn't send a verification code. Check your email and try again shortly. If the problem persists, contact your instructor.",
+          result.error.status === 429
+            ? "Too many code requests. Wait 10 minutes before requesting another code."
+            : "We couldn't send a verification code. Check your email and try again shortly. If the problem persists, contact your instructor.",
         );
-      else
+      else {
+        setResendCooldown(60);
+        setOtp("");
         setMessage(
-          "Code request accepted. Check your inbox and spam folder; delivery may take a moment.",
+          "Code requested. Check your inbox and Spam or Junk folder. Use the newest code; earlier codes no longer work. If you have not created an account yet, register first.",
         );
+      }
     } catch {
       setError("Check your connection and try again.");
     } finally {
@@ -160,6 +176,10 @@ export function AuthForm({
       <span className="eyebrow">YOUR LEARNING SPACE</span>
       <h1>{labels[mode]}</h1>
       <p className="muted">{subtitles[mode]}</p>
+      {mode === "verify-email" && <p className="notice">
+        Check Spam or Junk for an email from M Tech QMS. Codes expire after 10 minutes;
+        requesting another code replaces the previous one.
+      </p>}
       <form onSubmit={submit} className="form-stack">
         {mode === "sign-up" && (
           <label>
@@ -298,11 +318,12 @@ export function AuthForm({
             <button
               type="button"
               className="text-button"
-              disabled={busy || !hydrated || !email}
+              disabled={busy || !hydrated || !email || resendCooldown > 0}
               onClick={resend}
             >
-              Send a new code
+              {resendCooldown > 0 ? `Request another code in ${resendCooldown}s` : "Send a new code"}
             </button>
+            <Link href={`/sign-up?next=${next}`}>No account yet? Register first</Link>
             <Link href={`/sign-in?next=${next}`}>Back to sign in</Link>
           </>
         )}

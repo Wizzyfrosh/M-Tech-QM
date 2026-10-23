@@ -43,6 +43,8 @@ export async function sendOtpMail(message: OtpMail) {
       },
       to: [{ email: message.email }],
       subject: `${purpose} · M Tech QMS`,
+      tags: ["qms-account", message.type],
+      headers: { "Auto-Submitted": "auto-generated", "X-Auto-Response-Suppress": "All" },
       textContent: `${purpose}\n\nYour M Tech QMS code is ${message.otp}.\n\nIt expires in 10 minutes. Do not share this code. If you did not request it, you can ignore this email.`,
       htmlContent: `<div style="font-family:Arial,sans-serif;background:#f5f6fa;padding:32px"><div style="max-width:480px;margin:auto;background:white;padding:32px;border-radius:16px"><img src="${logoUrl}" width="240" alt="M Tech Hub" style="display:block;max-width:100%;height:auto;margin-bottom:20px"/><p style="color:#4f46e5;font-weight:700">M TECH QMS</p><h1 style="font-size:24px">${purpose}</h1><p>Enter this code to continue:</p><p style="font-size:32px;letter-spacing:8px;font-weight:700">${message.otp}</p><p>Expires in 10 minutes. Never share this code.</p><p style="color:#6b7280">If you did not request it, you can ignore this email.</p></div></div>`,
     }),
@@ -58,4 +60,5 @@ export async function sendOtpMail(message: OtpMail) {
     throw new Error("Verification email could not be sent.");
   }
   // HTTP 2xx confirms Brevo accepted the send request, not inbox delivery.
+  console.info("QMS_BREVO_ACCEPTED", message.type);
 }

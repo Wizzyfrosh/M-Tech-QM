@@ -345,6 +345,6 @@ export async function studentQuizDetails(db: PrismaClient, slug: string) {
     ...metadata,
     questionCount: _count.questions,
     maxMarks: questions.reduce((n, q) => n + q.marks, 0),
-    acceptingAttempts: false,
+    acceptingAttempts: row.status === "PUBLISHED" && !effectivelyClosed(row),
   };
 }

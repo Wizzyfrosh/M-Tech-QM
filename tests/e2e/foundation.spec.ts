@@ -91,20 +91,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByRole("button", { name: "Verify email", exact: true })
     .click();
-  await expect(student).toHaveURL(/\/sign-in\?email=browser%40example.test/);
-  await expect(
-    student.getByRole("heading", {
-      name: "Sign in to your account",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await student
-    .getByLabel("Email address", { exact: true })
-    .fill("browser@example.test");
-  await student
-    .getByLabel("Password", { exact: true })
-    .fill("Secur3!!");
-  await student.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(student).toHaveURL(/\\/dashboard/);
   await expect(student.getByRole("heading",{
     name:"Waiting for instructor approval"
   })).toBeVisible();

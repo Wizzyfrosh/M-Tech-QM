@@ -30,7 +30,7 @@ export function safeReturnTo(value: unknown): string {
     const url = new URL(value, base);
     if (
       url.origin !== base.origin ||
-      !/^\/(dashboard|instructor|student|q|attempts)(\/|$)/.test(url.pathname)
+      !/^\/(dashboard|instructor|student|q|attempts|leaderboard)(\/|$)/.test(url.pathname)
     )
       return "/dashboard";
     return url.pathname + url.search;

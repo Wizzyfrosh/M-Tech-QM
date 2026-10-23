@@ -182,13 +182,20 @@ test("student self-registers and verifies; instructor approves and may later sus
   ).toBeVisible();
   await page.reload();
   await page.getByRole("button",{name:"Approved",exact:true}).click();
+  const suspensionResponse = page.waitForResponse(response =>
+    response.url().includes("/api/instructor/students/") &&
+    response.request().method() === "PATCH",
+  );
   await page
     .getByRole("row")
     .filter({ hasText: "browser@example.test" })
     .getByRole("button", { name: "Suspend", exact: true })
     .click();
 
-  await expect(page.getByText("Suspended", { exact: true })).toBeVisible();
+  expect((await suspensionResponse).status()).toBe(200);
+  await expect(page.getByRole("status")).toContainText("Student access suspended.");
+  await expect(page.locator(".approval-desktop").getByText("browser@example.test", { exact: true })).toHaveCount(0);
+  expect((await context.request.get("/api/quizzes")).status()).toBe(401);
   await student.reload();
   await expect(student).toHaveURL(/sign-in/);
   await page.screenshot({

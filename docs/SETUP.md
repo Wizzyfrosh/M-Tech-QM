@@ -74,12 +74,26 @@ The initial preview instructor is an unredeemed invitation for the approved
 instructor email. Use the preview activation page to create preview-only
 credentials; the live production account remains unchanged.
 
-For students: instructor adds an approved email to the roster, copies its
-personalized signup URL, and shares it privately with that student. Upon
-successful signup, Better Auth generates a six-digit verification code via
-Brevo, and the UI opens an email-prefilled verification form. Students
-can resend an expired/missing code. Once verified, the UI opens sign-in.
-The server no longer reports success when an email was not approved.
+Student self-registration: Share `/sign-up` with your class. Students
+enter their own names, emails and passwords. Better Auth sends a six-digit
+verification code, and the interface opens the pre-filled OTP verification
+screen. After verifying and signing in, students see a pending-approval dashboard
+rather than lessons or quizzes. No instructor-entered student records or
+individual invite links are required.
+
+Instructor approval: Open `/instructor/students` and select
+**Awaiting approval**. Only students with verified emails appear in the approval
+queue. Approve one student or select up to 20 on the current page and approve
+the batch. Suspended students remain blocked; prior approved students retain
+their access. Approval takes effect at the next dashboard refresh without
+requiring a new verification code. `GET /api/quizzes`, individual quiz routes,
+attempts and results remain protected by the existing approved-access guard.
+Bulk writes are audited and restricted to the authenticated instructor.
+
+Preview migration requirements: first `202610230007_pending_roster_status`
+adds the PENDING enum value and then `202610230008_default_pending_students`
+changes the default. Apply them in that order. They do **not** rewrite existing
+approved or suspended student records.
 
 For testable preview mail delivery, BREVO_API_KEY and MAIL_FROM_EMAIL must be
 enabled on Vercel Preview in addition to Production. The sender domain must

@@ -6,7 +6,13 @@ const config: NextConfig = {
       {
         source: "/:path*",
         has: [{ type: "host", value: "m-tech-qms.vercel.app" }],
-        destination: "https://qms.froshcodeorbit.site/:path*",
+        destination: "https://mtech-qms.froshcodeorbit.site/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "qms.froshcodeorbit.site" }],
+        destination: "https://mtech-qms.froshcodeorbit.site/:path*",
         permanent: true,
       },
     ];

@@ -30,7 +30,7 @@ export function AiQuizPanel({
       const response = await fetch(`/api/instructor/quizzes/${quizId}/ai-drafts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, count, difficulty }),
+        body: JSON.stringify({ transcript, count: Math.min(count, countLimit), difficulty }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Could not generate questions.");

@@ -120,3 +120,30 @@ Grok is billable and OpenRouter's free model routing may have separate
 privacy/retention rules. Avoid confidential lesson content when using them.
 Provider credentials must not be exposed through NEXT_PUBLIC variables.
 Never assume the provider key is enabled until a live draft request succeeds.
+
+
+## Brevo student-verification troubleshooting
+
+A successful sign-up triggers a six-digit OTP send to the provided email. The
+server **awaits Brevo's HTTP response**; it never reports a successful send
+after a known rejection. Brevo acceptance does **not** guarantee inbox
+placement; check the inbox, spam folder, and Brevo transactional logs.
+
+Verify the following in Vercel for the exact preview Git branch:
+`BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, `BETTER_AUTH_URL`.
+The sender address or domain in `MAIL_FROM_EMAIL` must be authorized in Brevo.
+A key configured in Production alone does not necessarily cover Preview.
+The application never exposes keys or OTPs in runtime logs.
+
+Safe server error categories:
+- `QMS_BREVO_SEND_REJECTED` with provider HTTP status (often 400/401/403/429)
+- `QMS_BREVO_SEND_UNREACHABLE` for transport failures and timeouts
+- `Email delivery is not configured.` if required environment variables are empty
+
+If student signup created an account before an email transport failure, **do not
+register again**: open `/verify-email` and tap **Send a new code**. Codes
+expire in 10 minutes and are hashed in the database. The daily/session rate
+limits remain active. Verify real inbox receipt before production release.
+
+Responsive support now includes 320/360/390/760px layouts, touch-friendly
+authentication inputs and tabs, and instructor approval cards on phones.

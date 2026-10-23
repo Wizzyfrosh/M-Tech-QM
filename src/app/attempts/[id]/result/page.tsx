@@ -19,7 +19,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
     <section className="panel result-hero"><CheckCircle2 size={34}/><h2>Submission recorded</h2>
       <strong className="result-score">{result.earnedMarks} / {result.maxMarks}</strong>
       <p>{result.maxMarks ? Math.round(100*result.earnedMarks!/result.maxMarks) : 0}% of available marks</p></section>
-    {!result.reviewAvailable ? <section className="panel notice"><LockKeyhole size={18}/> Answer review will become available according to your instructor's release policy. Your score is already final.</section>
+    {!result.reviewAvailable ? <section className="panel notice"><LockKeyhole size={18}/> Answer review will become available according to your instructor&apos;s release policy. Your score is already final.</section>
     : <div className="preview-questions">{result.questions?.map((q,i) => <section className="panel" key={q.id}>
       <div className="panel-heading"><h2>Question {i+1}</h2><span className="badge lavender">{q.awardedMarks}/{q.marks} marks</span></div>
       <p className="question-prompt">{q.prompt}</p>

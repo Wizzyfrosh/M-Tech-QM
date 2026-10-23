@@ -10,6 +10,7 @@ export async function GET(request: Request) {
       name: actor.name,
       email: actor.email,
       role: actor.role,
+      accessStatus: actor.role === "STUDENT" ? actor.roster?.status ?? "PENDING" : "ACTIVE",
       leaderboardOptOut: actor.leaderboardOptOut,
     });
   } catch (error) {

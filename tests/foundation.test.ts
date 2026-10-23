@@ -11,6 +11,7 @@ import type { OtpMail } from "../src/lib/mail";
 import { consumeEmailQuota } from "../src/lib/throttle";
 import { getActor, getSignedInActor } from "../src/lib/access";
 import { POST as approveStudents } from "../src/app/api/instructor/students/approve/route";
+import { recordEmailDelivery } from "../src/lib/otp-delivery-receipt";
 
 let db: PrismaClient;
 let auth: ReturnType<typeof createAuth>;
@@ -94,6 +95,7 @@ beforeAll(async () => {
     secret: process.env.BETTER_AUTH_SECRET!,
     sendMail: async (m) => {
       mail.push(m);
+      recordEmailDelivery(true);
     },
   });
   const id = crypto.randomUUID();
@@ -196,21 +198,31 @@ describe("foundation authorization and account flow", () => {
     expect(await repeat.json()).toEqual({approved:0,skipped:1});
     expect(await db.auditEvent.count({where:{action:"STUDENT_APPROVED"}})).toBe(1);
   });
-  it("does not report a sent signup OTP if the mail provider rejects it", async () => {
-    const broken = createAuth(db, {
+  it("reports a failed Brevo signup send even when Better Auth catches that error", async () => {
+    const original = auth;
+    auth = createAuth(db, {
       url: base,
       secret: process.env.BETTER_AUTH_SECRET!,
-      sendMail: async () => { throw new Error("Synthetic Brevo rejection"); },
+      sendMail: async () => {
+        recordEmailDelivery(false);
+        throw new Error("Synthetic Brevo rejection");
+      },
     });
-    const response = await broken.handler(request("/api/auth/sign-up/email", {
-      name: "Mail Failure Test", email: "mail-failure@example.test", password,
-    }));
-    expect(response.ok).toBe(false);
-    const record = await db.user.findUnique({
-      where: { email: "mail-failure@example.test" }, include: { roster: true },
-    });
-    // A partially created account can recover by resending from Verify email.
-    if (record) expect(record.roster?.status).toBe("PENDING");
+    try {
+      const response = await authPost(request("/api/auth/sign-up/email", {
+        name: "Mail Failure Test", email: "mail-failure@example.test", password,
+      }));
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: expect.stringContaining("verification code"),
+      });
+      const record = await db.user.findUnique({
+        where: { email: "mail-failure@example.test" }, include: { roster: true },
+      });
+      if (record) expect(record.roster?.status).toBe("PENDING");
+    } finally {
+      auth = original;
+    }
   });
   it("registers a roster student without allowing role escalation", async () => {
     const r = await authPost(

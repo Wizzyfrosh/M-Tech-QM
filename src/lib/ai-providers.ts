@@ -10,7 +10,7 @@ export function aiProviderConfig(provider: AiProvider) {
   };
   if(provider === "openrouter") return {
     key: process.env.OPENROUTER_API_KEY,
-    model: process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free",
+    model: process.env.OPENROUTER_MODEL || "openrouter/free",
     endpoint: "https://openrouter.ai/api/v1/chat/completions",
   };
   return {

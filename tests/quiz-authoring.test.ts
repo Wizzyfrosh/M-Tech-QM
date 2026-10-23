@@ -137,7 +137,7 @@ beforeAll(async () => {
     if (role === "STUDENT") {
       student = id;
       await db.rosterEntry.create({
-        data: { normalizedEmail: email, name: role, userId: id },
+        data: { normalizedEmail: email, name: role, userId: id, status: "ACTIVE" },
       });
     } else owner = id;
     const response = await auth.handler(

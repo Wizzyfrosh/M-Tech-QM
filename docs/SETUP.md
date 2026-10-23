@@ -1,5 +1,7 @@
 # Configuration and first instructor
 
+Production canonical origin: `https://mtech-qms.froshcodeorbit.site`. Point `BETTER_AUTH_URL` to that exact URL; do not use the previous `qms` hostname for production authentication or email links.
+
 ## Environment variables
 
 | Variable           | Purpose                                                               |

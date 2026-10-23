@@ -33,7 +33,7 @@ async function mailCode(email: string, type: string, sentAfter: number) {
     .toBe(6);
   return otp;
 }
-test("instructor adds a student; student verifies, signs in, recovers and loses access when suspended", async ({
+test("student self-registers and verifies; instructor approves and may later suspend access", async ({
   browser,
   page,
 }) => {
@@ -100,7 +100,8 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await expect(student).toHaveURL(/\/dashboard/);
   await page.reload();
   await expect(page.getByText("browser@example.test", {exact:true})).toBeVisible();
-  await page.getByRole("button",{name:"Approve",exact:true}).click();
+  await page.getByRole("row").filter({hasText:"browser@example.test"})
+    .getByRole("button",{name:"Approve",exact:true}).click();
   await expect(page.getByText("browser@example.test",{exact:true})).toHaveCount(0);
   await student.reload();
   await expect(student.getByRole("heading", {name:"Welcome back, Browser."})).toBeVisible();

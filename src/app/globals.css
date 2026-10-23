@@ -1865,3 +1865,36 @@ select:disabled {
   .topbar { padding: 0 13px; }
   .app-footer { padding-inline: 12px; flex-wrap: wrap; gap: 6px; }
 }
+
+
+/* Touch-first refinements: student onboarding, quizzes and instructor approvals. */
+html,body { max-width:100%; overflow-x:clip; }
+.app-shell,.main-area,.page-content,.panel,.auth-main,.auth-form { min-width:0; }
+.student-cell { min-width:0; }
+.student-cell small,.student-cell strong { overflow-wrap:anywhere; }
+@media (max-width:760px) {
+  .page-content { padding:20px 14px 36px; }
+  .panel { padding:18px 15px; }
+  .panel-heading { flex-wrap:wrap; gap:12px; }
+  .auth-layout { min-height:100dvh; }
+  .auth-main { width:100%; padding:28px 18px; }
+  .auth-form { width:100%; max-width:480px; margin-inline:auto; }
+  .auth-form input,.auth-form select,.auth-form textarea { width:100%; min-width:0; font-size:16px; }
+  .auth-form .button.full { min-height:48px; }
+  .otp-input { letter-spacing:.22em; font-variant-numeric:tabular-nums; }
+  .button-row { flex-wrap:wrap; gap:9px; }
+  .button-row .button { min-height:42px; }
+  .searchbar { width:100%; min-width:0; }
+  .searchbar input { min-width:0; flex:1; font-size:16px; }
+  .table-scroll,.report-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; -webkit-overflow-scrolling:touch; }
+  .table-scroll table { min-width:650px; }
+  .pagination { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+  .pending-panel { width:100%; padding:24px 18px; }
+  .pending-panel .button-row,.pending-panel .button-row > * { width:100%; }
+}
+@media (max-width:380px) {
+  .page-content { padding-inline:10px; }
+  .panel { padding-inline:12px; }
+  .auth-main { padding-inline:14px; }
+  .topbar { padding-inline:12px; }
+}

@@ -12,3 +12,7 @@ test-results/
 .DS_Store
 exports/
 private-data/
+.local-mail/
+src/generated/
+*.tsbuildinfo
+.env.test

@@ -1,0 +1,64 @@
+{
+  "name": "m-tech-qms",
+  "version": "0.1.0",
+  "description": "Quiz Management System for one programming instructor and a private student community.",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "prisma generate && next build --webpack",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "instructor:setup": "node --import tsx scripts/setup-instructor.ts",
+    "postinstall": "prisma generate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wizzyfrosh/M-Tech-QM.git"
+  },
+  "license": "UNLICENSED",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Wizzyfrosh/M-Tech-QM/issues"
+  },
+  "homepage": "https://github.com/Wizzyfrosh/M-Tech-QM#readme",
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "better-auth": "1.7.12",
+    "dotenv": "18.0.9",
+    "lucide-react": "1.61.0",
+    "next": "16.4.2",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "@electric-sql/pglite-socket": "0.2.14",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.6.5",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.2",
+    "prettier": "3.9.10",
+    "prisma": "7.10.1",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+}
+
+enum RosterStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id                String       @id
+  name              String
+  email             String       @unique
+  emailVerified     Boolean      @default(false)
+  image             String?
+  role              Role         @default(STUDENT)
+  leaderboardOptOut Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  sessions          Session[]
+  accounts          Account[]
+  roster            RosterEntry?
+  auditEvents       AuditEvent[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
+model RosterEntry {
+  id              String       @id @default(uuid())
+  normalizedEmail String       @unique
+  name            String
+  status          RosterStatus @default(ACTIVE)
+  revision        Int          @default(0)
+  userId          String?      @unique
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  action    String
+  entityId  String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model RequestBucket {
+  key       String   @id
+  count     Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

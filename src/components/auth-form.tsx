@@ -35,7 +35,7 @@ export function AuthForm({
   };
   const subtitles = {
     "sign-in": "Your next step starts here. Pick up where you left off.",
-    "sign-up": "Your instructor has approved your email. Create an account and receive a six-digit code.",
+    "sign-up": "Create your account, verify your email, then wait for your instructor to approve access.",
     "verify-email":
       "Enter the six-digit code sent to your email. Codes expire after 10 minutes.",
     "forgot-password": "We’ll send a code if this email has an account.",
@@ -70,7 +70,7 @@ export function AuthForm({
         });
         if (result.error)
           setError(
-            result.error.message || "Registration failed. Check the approved email and try again.",
+            result.error.message || "Registration failed. Check your details and try again.",
           );
         else {
           window.location.assign(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);

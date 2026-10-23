@@ -141,6 +141,7 @@ model Quiz {
   lessonLabel        String     @default("")
   description        String     @default("")
   lessonUrl          String?
+  lessonUrls         String[]   @default([])
   deadline           DateTime?
   status             QuizStatus @default(DRAFT)
   revision           Int        @default(0)

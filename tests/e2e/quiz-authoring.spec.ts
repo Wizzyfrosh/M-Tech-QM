@@ -164,7 +164,7 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     }),
   ).toBeVisible();
   await expect(
-    student.getByText(/This quiz is not accepting attempts yet/),
+    student.getByRole("button", { name: "Start or resume quiz" }),
   ).toBeVisible();
   expect(await student.content()).not.toContain("PRIVATE_");
   const metadata = await (
@@ -177,6 +177,19 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await student.getByRole("button", { name: "Start or resume quiz" }).click();
+  await expect(student.getByText("OFFICIAL ASSESSMENT", { exact: true })).toBeVisible();
+  await expect(student.getByText(/Which keyword creates a binding/)).toBeVisible();
+  await student.getByRole("radio", { name: "" }).first().check();
+  await student.getByRole("button", { name: "Save progress" }).click();
+  await expect(student.getByText(/Answers saved/)).toBeVisible();
+  await student.reload();
+  await expect(student.getByText(/1 of 1 questions answered/)).toBeVisible();
+  student.once("dialog", dialog => dialog.accept());
+  await student.getByRole("button", { name: "Submit final answers" }).click();
+  await expect(student.getByText("Submission recorded", { exact: true })).toBeVisible();
+  await expect(student.getByText("3 / 3", { exact: true })).toBeVisible();
+  expect(await student.content()).not.toContain("PRIVATE_EXPLANATION");
   await page.getByRole("button", { name: "Close quiz", exact: true }).click();
   await page
     .getByRole("button", { name: "Confirm close", exact: true })

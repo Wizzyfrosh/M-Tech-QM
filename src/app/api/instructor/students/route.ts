@@ -11,9 +11,12 @@ export async function GET(request: Request) {
       Math.min(10000, Number(url.searchParams.get("page")) || 1),
     );
     const q = (url.searchParams.get("q") || "").slice(0, 80);
-    const status = url.searchParams.get("status") || "PENDING";
+    const requested = url.searchParams.get("status");
+    const status: "PENDING" | "ACTIVE" | "SUSPENDED" | null =
+      requested === "ACTIVE" || requested === "SUSPENDED" || requested === "PENDING"
+        ? requested : requested === "ALL" ? null : "PENDING";
     const where = {
-      ...(status === "PENDING" || status === "ACTIVE" || status === "SUSPENDED" ? { status } : {}),
+      ...(status ? { status } : {}),
       ...(status === "PENDING" ? { user: { emailVerified: true } } : {}),
       ...(q ? { OR: [
         { name: { contains: q, mode: "insensitive" as const } },

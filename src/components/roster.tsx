@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useHydrated } from "@/lib/use-hydrated";
-import { Search, UserPlus, Users, LoaderCircle } from "lucide-react";
+import { Search, UserPlus, Users, LoaderCircle, Copy } from "lucide-react";
 type Entry = {
   id: string;
   name: string;
@@ -66,7 +66,7 @@ export function Roster() {
       if (!r.ok) throw new Error(result.error);
       form.reset();
       setNotice(
-        "Student added. Share the app link so they can create their account.",
+        "Student added. Use Copy signup link to share their prefilled registration form.",
       );
       setPage(1);
       setSearch("");
@@ -77,6 +77,16 @@ export function Roster() {
       setError(e instanceof Error ? e.message : "Could not add student.");
     } finally {
       setBusy(false);
+    }
+  }
+  async function copyRegistrationLink(entry: Entry) {
+    try {
+      const url = new URL("/sign-up", window.location.origin);
+      url.searchParams.set("email", entry.normalizedEmail);
+      await navigator.clipboard.writeText(url.href);
+      setNotice("Student registration link copied. Share it privately with the student.");
+    } catch {
+      setError("Unable to copy. Open /sign-up and share the website address instead.");
     }
   }
   async function change(entry: Entry) {
@@ -231,6 +241,10 @@ export function Roster() {
                         </span>
                       </td>
                       <td>
+                        {entry.status === "ACTIVE" && <button type="button" className="text-button"
+                          disabled={busy || !hydrated} onClick={() => copyRegistrationLink(entry)}>
+                          <Copy size={14}/> Copy signup link
+                        </button>}
                         <button
                           className="text-button"
                           disabled={busy || !hydrated}
@@ -328,7 +342,7 @@ export function Roster() {
         </form>
         <p className="help-note">
           Adding a student enables registration. Share the app link with them;
-          no invitation email is sent.
+          students receive a verification code automatically when they create their account.
         </p>
       </aside>
     </div>

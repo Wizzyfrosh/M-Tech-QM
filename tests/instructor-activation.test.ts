@@ -9,7 +9,7 @@ import { requestInstructorActivation, redeemInstructorActivation } from "../src/
 import { AccessError } from "../src/lib/access";
 import { verifyPassword } from "better-auth/crypto";
 const sent: { email: string; otp: string; type: string }[] = [];
-vi.mock("@/lib/mail", () => ({ sendOtpMail: async (mail: { email: string; otp: string; type: string }) => { sent.push(mail); } }));
+
 let db: PrismaClient;
 let lite: PGlite | undefined;
 let socket: PGLiteSocketServer | undefined;
@@ -41,8 +41,8 @@ afterAll(async () => {
 });
 describe("one-time instructor onboarding", () => {
   it("does not send an activation code to an unapproved email or reveal eligibility", async () => {
-    const unknown = await requestInstructorActivation(db, "unapproved@example.test");
-    const approved = await requestInstructorActivation(db, ownerEmail);
+    const unknown = await requestInstructorActivation(db, "unapproved@example.test", mail => { sent.push(mail); });
+    const approved = await requestInstructorActivation(db, ownerEmail, mail => { sent.push(mail); });
     expect(unknown).toEqual(approved);
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ email: ownerEmail, type: "instructor-activation" });
@@ -76,7 +76,7 @@ describe("one-time instructor onboarding", () => {
   it("rejects replay and will never issue a second invitation after activation", async () => {
     await expect(redeemInstructorActivation(db, ownerEmail, sent[0].otp, ownerPassword))
       .rejects.toMatchObject({ status: 400 } satisfies Partial<AccessError>);
-    await requestInstructorActivation(db, ownerEmail);
+    await requestInstructorActivation(db, ownerEmail, mail => { sent.push(mail); });
     expect(sent).toHaveLength(1);
     expect(await db.user.count({ where: { role: "INSTRUCTOR" } })).toBe(1);
   });

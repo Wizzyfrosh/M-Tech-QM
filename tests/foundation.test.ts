@@ -174,7 +174,7 @@ describe("foundation authorization and account flow", () => {
     expect(unverified.emailVerified).toBe(false);
     expect(unverified.roster?.status).toBe("PENDING");
     const otp = code("unknown@example.test", "email-verification");
-    expect(otp).toMatch(/^\\d{6}$/);
+    expect(otp).toMatch(/^\d{6}$/);
     expect((await call("/email-otp/verify-email", {
       email: "unknown@example.test", otp,
     })).status).toBe(200);

@@ -9,6 +9,8 @@ import { hashPassword } from "better-auth/crypto";
 import { createAuth } from "../src/lib/auth-core";
 import type { OtpMail } from "../src/lib/mail";
 import { consumeEmailQuota } from "../src/lib/throttle";
+import { getActor, getSignedInActor } from "../src/lib/access";
+import { POST as approveStudents } from "../src/app/api/instructor/students/approve/route";
 
 let db: PrismaClient;
 let auth: ReturnType<typeof createAuth>;
@@ -160,18 +162,39 @@ describe("foundation authorization and account flow", () => {
       ).status,
     ).toBe(409);
   });
-  it("unlisted signup does not create an account or disclose roster eligibility", async () => {
-    const r = await authPost(
-      request("/api/auth/sign-up/email", {
-        name: "Unknown Student",
-        email: "unknown@example.test",
-        password,
-      }),
-    );
-    expect(r.status).toBe(200);
-    expect(
-      await db.user.findUnique({ where: { email: "unknown@example.test" } }),
-    ).toBeNull();
+  it("allows independent student signup but enforces pending access until approval", async () => {
+    const r = await authPost(request("/api/auth/sign-up/email", {
+      name: "Independent Student", email: "unknown@example.test", password,
+    }));
+    expect(r.status, await r.clone().text()).toBe(200);
+    const unverified = await db.user.findUniqueOrThrow({
+      where: { email: "unknown@example.test" }, include: { roster: true },
+    });
+    expect(unverified.role).toBe("STUDENT");
+    expect(unverified.emailVerified).toBe(false);
+    expect(unverified.roster?.status).toBe("PENDING");
+    const otp = code("unknown@example.test", "email-verification");
+    expect(otp).toMatch(/^\\d{6}$/);
+    expect((await call("/email-otp/verify-email", {
+      email: "unknown@example.test", otp,
+    })).status).toBe(200);
+    const pendingCookie = await signIn("unknown@example.test");
+    const header = new Headers({ cookie: pendingCookie });
+    expect((await getSignedInActor(header)).roster?.status).toBe("PENDING");
+    await expect(getActor(header)).rejects.toMatchObject({status:403});
+    expect((await meGet(request("/api/me", undefined, pendingCookie))).status).toBe(200);
+    expect((await listStudents(request("/api/instructor/students", undefined, pendingCookie))).status).toBe(403);
+    expect((await approveStudents(request("/api/instructor/students/approve",
+      { ids:[unverified.roster!.id] }, pendingCookie))).status).toBe(403);
+    const approval = await approveStudents(request("/api/instructor/students/approve",
+      { ids:[unverified.roster!.id] }, instructorCookie));
+    expect(approval.status, await approval.clone().text()).toBe(200);
+    expect(await approval.json()).toEqual({approved:1,skipped:0});
+    expect((await getActor(header)).roster?.status).toBe("ACTIVE");
+    const repeat = await approveStudents(request("/api/instructor/students/approve",
+      { ids:[unverified.roster!.id] }, instructorCookie));
+    expect(await repeat.json()).toEqual({approved:0,skipped:1});
+    expect(await db.auditEvent.count({where:{action:"STUDENT_APPROVED"}})).toBe(1);
   });
   it("registers a roster student without allowing role escalation", async () => {
     const r = await authPost(
@@ -397,7 +420,7 @@ describe("foundation authorization and account flow", () => {
     expect(results.filter(Boolean)).toHaveLength(5);
   });
   it("database prevents a second instructor and preserves audit events", async () => {
-    expect(await db.auditEvent.count()).toBe(3);
+    expect(await db.auditEvent.count()).toBe(4);
     expect(
       await db.user.findUnique({ where: { id: studentId } }),
     ).not.toBeNull();

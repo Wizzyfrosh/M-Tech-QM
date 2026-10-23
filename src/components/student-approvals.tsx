@@ -97,7 +97,7 @@ export function StudentApprovals() {
           onClick={()=>approve(selected)}><CheckCircle2 size={16}/> Approve selected ({selected.length})</button>
       </div>}
       {loading?<div role="status" className="empty compact"><LoaderCircle className="spin"/> Loading students…</div>:
-        entries.length?<div className="table-scroll"><table><thead><tr>
+        entries.length?<><div className="table-scroll approval-desktop"><table><thead><tr>
           {status==="PENDING"&&<th>Select</th>}
           <th>Student</th><th>Verification</th><th>Access</th><th>Actions</th>
         </tr></thead><tbody>{entries.map(entry=><tr key={entry.id}>
@@ -111,7 +111,40 @@ export function StudentApprovals() {
           <td>{entry.status==="PENDING"?<button className="button small primary" disabled={busy||!entry.user?.emailVerified}
             onClick={()=>approve([entry.id])}>Approve</button>:<button className="button small"
             disabled={busy} onClick={()=>update(entry)}>{entry.status==="ACTIVE"?"Suspend":"Restore"}</button>}</td>
-        </tr>)}</tbody></table></div>:
+        </tr>)}</tbody></table></div>
+        <div className="approval-mobile-list" aria-label="Students">
+          {entries.map(entry => <article key={entry.id} className="approval-student-card">
+            <div className="approval-student-header">
+              <div className="approval-student-identity">
+                <strong>{entry.name}</strong>
+                <span>{entry.normalizedEmail}</span>
+              </div>
+              <span className={`badge ${entry.status==="ACTIVE"?"green":"amber"}`}>
+                {entry.status==="PENDING"?"Waiting":entry.status==="ACTIVE"?"Approved":"Suspended"}
+              </span>
+            </div>
+            <div className="approval-student-detail">
+              <span>Email</span><strong>{entry.user?.emailVerified?"Verified":"Not verified"}</strong>
+            </div>
+            <div className="approval-student-actions">
+              {status==="PENDING" && <label className="checkbox-label">
+                <input aria-label={`Select ${entry.name}`} type="checkbox"
+                  disabled={!entry.user?.emailVerified || busy}
+                  checked={selected.includes(entry.id)}
+                  onChange={event=>setSelected(current=>event.target.checked
+                    ? [...current,entry.id]
+                    : current.filter(id=>id!==entry.id))}/>
+                Select student
+              </label>}
+              {entry.status==="PENDING"
+                ? <button type="button" className="button small primary"
+                    disabled={busy||!entry.user?.emailVerified}
+                    onClick={()=>approve([entry.id])}>Approve</button>
+                : <button type="button" className="button small" disabled={busy}
+                    onClick={()=>update(entry)}>{entry.status==="ACTIVE"?"Suspend":"Restore"}</button>}
+            </div>
+          </article>)}
+        </div></>:
         <div className="empty"><UserCheck size={30}/>
           <h3>{status==="PENDING"?"No verified students waiting":status==="ACTIVE"?"No approved students":"No suspended students"}</h3>
           <p>{status==="PENDING"?"Share the registration link with students. Verified accounts appear automatically.":"Students will appear here when their status changes."}</p>

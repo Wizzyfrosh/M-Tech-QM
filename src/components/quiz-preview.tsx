@@ -41,14 +41,9 @@ export function QuizPreview({ quiz }: { quiz: EditorQuiz }) {
           </span>
           <span>{formatDeadline(quiz.deadline)}</span>
         </div>
-        {quiz.lessonUrl && (
-          <a
-            href={quiz.lessonUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-button"
-          >
-            Open lesson
+        {(quiz.lessonUrls?.length ? quiz.lessonUrls : quiz.lessonUrl ? [quiz.lessonUrl] : []).map((url, i) =>
+          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-button">
+            Watch video part {i + 1}
           </a>
         )}
       </section>

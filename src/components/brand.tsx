@@ -1,15 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Layers3 } from "lucide-react";
 export function Brand() {
   return (
     <Link href="/dashboard" className="brand" aria-label="M Tech QMS home">
-      <span className="brand-mark">
-        <Layers3 size={23} />
-      </span>
-      <span>
-        M Tech <b>QMS</b>
-        <small>LEARN. PRACTICE. PROGRESS.</small>
-      </span>
+      <Image
+        className="brand-image"
+        src="/m-tech-hub-logo.jpg"
+        width={1242}
+        height={472}
+        alt="M Tech Hub — Where future developers are made"
+        loading="eager"
+        unoptimized
+      />
+      <small>QUIZ MANAGEMENT SYSTEM</small>
     </Link>
   );
 }

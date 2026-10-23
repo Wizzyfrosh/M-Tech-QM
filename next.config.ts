@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "m-tech-qms.vercel.app" }],
+        destination: "https://qms.froshcodeorbit.site/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

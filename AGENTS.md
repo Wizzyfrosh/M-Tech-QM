@@ -11,7 +11,7 @@ Read README.md and docs/PRD.md, docs/ARCHITECTURE.md and docs/IMPLEMENTATION.md 
 - Keep secrets server-only and out of logs, commits and example values. Use synthetic test fixtures.
 - Choose compatible supported package versions during scaffolding; commit a lockfile and documented commands.
 - Test meaningful security, concurrency, grading and full user flows. Run the checks relevant to each change and report actual results and limitations.
-- Keep UI responsive, accessible and plain-language. No emojis in product UI.
+- Keep UI responsive, accessible and plain-language. No emojis in product UI. Use Lucide SVG icons from https://lucide.dev for interface symbols; use the supplied M Tech Hub logo for branding.
 - Do not provision paid services, change production configuration, apply production migrations or deploy as an implicit side effect of a documentation change.
 
 <!-- BEGIN:nextjs-agent-rules -->

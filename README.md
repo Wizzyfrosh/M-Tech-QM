@@ -4,7 +4,7 @@ A mobile-friendly quiz workspace for one programming instructor and a private st
 
 ## Implementation status
 
-Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Milestone 2 adds manual multiple-choice quiz authoring, reviewed-answer validation, instructor preview, publication, shared details links, duplication, closure and archiving. Published questions and answer keys are locked. Student attempts, grading, reports, leaderboard rankings and AI drafting remain upcoming milestones. Both implementation milestones are merged into main. The dedicated Neon production database has both migrations applied. The app is hosted at [m-tech-qms.vercel.app](https://m-tech-qms.vercel.app). Live Brevo delivery and instructor activation remain pending; see [deployment status](docs/DEPLOYMENT.md).
+Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Milestone 2 adds manual multiple-choice quiz authoring, reviewed-answer validation, instructor preview, publication, shared details links, duplication, closure and archiving. Published questions and answer keys are locked. Student attempts, grading, reports, leaderboard rankings and AI drafting remain upcoming milestones. Both implementation milestones are merged into main. The dedicated Neon production database has both migrations applied. The app is hosted at [qms.froshcodeorbit.site](https://qms.froshcodeorbit.site). Live Brevo delivery and instructor activation remain pending; see [deployment status](docs/DEPLOYMENT.md).
 
 ## Stack
 
@@ -51,3 +51,7 @@ Use `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` only if a compatible Chromium browser 
 - [Engineering instructions](AGENTS.md)
 
 Repository: [Wizzyfrosh/M-Tech-QM](https://github.com/Wizzyfrosh/M-Tech-QM). Product name: **M Tech QMS**. Never commit student records, transcripts, exports, real assessment keys or credentials to this public repository.
+
+## Branding
+
+The supplied M Tech Hub logo is used in account pages, workspace navigation and transactional emails. Interface symbols use [Lucide SVG icons](https://lucide.dev/); do not use emoji characters.

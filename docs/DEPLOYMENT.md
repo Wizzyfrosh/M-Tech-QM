@@ -10,7 +10,8 @@ Status recorded on 23 October 2026.
 
 ## Vercel production deployment
 
-- Public URL: https://m-tech-qms.vercel.app
+- Public URL: https://qms.froshcodeorbit.site
+- The subdomain is verified in Vercel and serves HTTPS through the existing Vercel DNS zone. Production `BETTER_AUTH_URL` uses this origin. The previous `m-tech-qms.vercel.app` URL redirects to it.
 - Project: `m-tech-qms` (`prj_YBbD7C3bzeGRgMOTmYVgTsuQ5FOK`), team `umanor-wisdom-chizoba-s-projects`.
 - GitHub integration is connected to `Wizzyfrosh/M-Tech-QM`, production branch `main`; future main pushes trigger deployments.
 - Initial configured production deployment: `dpl_87b6KyDgMTC1MNjup1EcXjaVWmW5`, application commit `1b4a4ebbf66c95175089ee2a6041aeb3c0d039b6`, status READY. Node.js 24, Next.js and the Frankfurt function region are configured in Vercel.
@@ -29,3 +30,9 @@ Status recorded on 23 October 2026.
 Add `BREVO_API_KEY` and `MAIL_FROM_EMAIL` (a verified Brevo sender) to **Production** in Vercel environment settings, then redeploy for those values to take effect. `MAIL_TRANSPORT=brevo` and `MAIL_FROM_NAME=M Tech QMS` are already set. Never paste the API key into chat or source control.
 
 The intended instructor email is still needed. Provision that account using the setup script and verify email ownership through password recovery. Confirm actual Brevo delivery and the authenticated account/quiz workflow before calling the release ready for students. Student attempts and grading remain the next implementation milestone.
+
+## Brand and sending domain
+
+The supplied M Tech Hub logo is stored unchanged at `/m-tech-hub-logo.jpg` and used by the app and transactional email template. UI icons use Lucide SVG components; source review found no emoji characters.
+
+For a sender such as `notifications@qms.froshcodeorbit.site`, add `qms.froshcodeorbit.site` as the sender domain in Brevo. This is an example sender, not a provisioned mailbox. Use the exact Brevo verification, DKIM and DMARC records shown for that domain. Application HTTPS verification does not authenticate outgoing email. Brevo authentication and delivery are still pending.

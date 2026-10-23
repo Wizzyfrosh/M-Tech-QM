@@ -176,34 +176,25 @@ label small {
 }
 .brand {
   display: flex;
-  align-items: center;
-  gap: 11px;
-  font-size: 21px;
-  font-weight: 750;
-  letter-spacing: -0.6px;
-  white-space: nowrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 300px;
+  max-width: 100%;
 }
-.brand b {
-  font-weight: 400;
-  color: #7b759b;
+.brand-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 .brand small {
   display: block;
-  font-size: 7px;
+  margin-left: 10px;
+  font-size: 8px;
   letter-spacing: 1.6px;
   color: #687086;
   font-weight: 600;
-  margin-top: 2px;
-}
-.brand-mark {
-  display: grid;
-  place-items: center;
-  background: var(--purple);
-  color: #fff;
-  width: 43px;
-  height: 43px;
-  border-radius: 12px;
-  box-shadow: 0 6px 14px #6556d81f;
 }
 .form-stack {
   display: flex;
@@ -455,16 +446,11 @@ label small {
   z-index: 10;
 }
 .sidebar .brand {
-  font-size: 20px;
-  gap: 9px;
-}
-.sidebar .brand-mark {
-  width: 39px;
-  height: 39px;
-  border-radius: 11px;
+  width: 240px;
 }
 .sidebar .brand small {
-  font-size: 6px;
+  font-size: 7px;
+  letter-spacing: 1.1px;
 }
 .nav-label {
   margin: 45px 13px 13px;
@@ -1044,8 +1030,11 @@ td {
     display: block;
   }
   .auth-aside {
-    padding: 23px 25px;
+    padding: 20px 25px;
     background: #f3f1fc;
+  }
+  .auth-aside .brand {
+    width: 240px;
   }
   .auth-story,
   .aside-foot {
@@ -1053,7 +1042,7 @@ td {
   }
   .auth-main {
     padding: 40px 25px;
-    min-height: calc(100dvh - 89px);
+    min-height: calc(100dvh - 155px);
     justify-content: flex-start;
   }
   .auth-form {
@@ -1080,7 +1069,7 @@ td {
     margin-left: 0;
   }
   .sidebar .brand {
-    font-size: 18px;
+    width: 230px;
   }
   .nav-label,
   .sidebar-note,

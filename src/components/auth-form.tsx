@@ -70,7 +70,9 @@ export function AuthForm({
         });
         if (result.error)
           setError(
-            result.error.message || "Registration failed. Check your details and try again.",
+            result.error.status >= 500
+              ? "Your registration may have been saved, but we could not send the verification email. Open Verify email below to request a new code."
+              : (result.error.message || "Registration failed. Check your details and try again."),
           );
         else {
           window.location.assign(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
@@ -140,11 +142,11 @@ export function AuthForm({
       });
       if (result.error)
         setError(
-          "Unable to request a code. Check your email and try again later.",
+          "We couldn't send a verification code. Check your email and try again shortly. If the problem persists, contact your instructor.",
         );
       else
         setMessage(
-          "If your account needs verification, a new code will arrive shortly.",
+          "Code request accepted. Check your inbox and spam folder; delivery may take a moment.",
         );
     } catch {
       setError("Check your connection and try again.");
@@ -283,7 +285,7 @@ export function AuthForm({
         {mode === "sign-up" && (
           <>
             <Link href={`/verify-email?email=${encodeURIComponent(email)}&next=${next}`}>
-              Already registered? Verify your email
+              Already registered or didn't receive a code? Verify email or resend
             </Link>
             <p>
               Already registered?{" "}

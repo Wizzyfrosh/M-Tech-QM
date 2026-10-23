@@ -9,7 +9,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
-    const input = await readJson(request, aiDraftRequestSchema, 65_536);
+    const input = await readJson(request, aiDraftRequestSchema, 160_000);
     return json(await generateQuizDrafts(getDb(), actor.id, (await context.params).id, input));
   } catch (error) {
     return failure(error);

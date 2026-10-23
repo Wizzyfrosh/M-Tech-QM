@@ -91,7 +91,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByRole("button", { name: "Verify email", exact: true })
     .click();
-  await expect(student).toHaveURL(/\\/dashboard/);
+  await expect(student).toHaveURL(/\/dashboard/);
   await expect(student.getByRole("heading",{
     name:"Waiting for instructor approval"
   })).toBeVisible();

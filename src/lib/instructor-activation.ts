@@ -3,7 +3,7 @@ import { createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto"
 import { hashPassword } from "better-auth/crypto";
 import type { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { AccessError } from "./access";
-import { sendOtpMail } from "./mail";
+import type { OtpMail } from "./mail";
 import { consumeEmailQuota } from "./throttle";
 
 // No endpoint can create an invitation. A trusted Neon admin creates the one
@@ -23,7 +23,7 @@ function constantTimeMatch(expected: string | null, calculated: string) {
   if (!expected || !/^[a-f0-9]{64}$/.test(expected)) return false;
   return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(calculated, "hex"));
 }
-export async function requestInstructorActivation(db: PrismaClient, email: string) {
+export async function requestInstructorActivation(db: PrismaClient, email: string, scheduleMail: (message: OtpMail) => void) {
   const allowed = await consumeEmailQuota(db, email, "instructor-activation-request", secret(), 3);
   if (!allowed) return { message: generic };
   const invitation = await db.$transaction(async tx => {
@@ -45,12 +45,7 @@ export async function requestInstructorActivation(db: PrismaClient, email: strin
     return code;
   }, { timeout: 15000 });
   if (invitation) {
-    try {
-      await sendOtpMail({ email, otp: invitation, type: "instructor-activation" });
-    } catch {
-      console.error("QMS_INSTRUCTOR_ACTIVATION_DELIVERY_FAILED");
-      // Do not reveal the existence of an allowlisted invitation.
-    }
+    scheduleMail({ email, otp: invitation, type: "instructor-activation" });
   }
   return { message: generic };
 }

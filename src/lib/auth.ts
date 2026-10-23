@@ -2,6 +2,7 @@ import "server-only";
 import { createAuth } from "./auth-core";
 import { getDb } from "./db";
 import { sendOtpMail } from "./mail";
+import { recordEmailDelivery } from "./otp-delivery-receipt";
 let auth: ReturnType<typeof createAuth> | undefined;
 export function getAuth() {
   if (!auth) {
@@ -18,9 +19,15 @@ export function getAuth() {
       url,
       secret,
       sendMail: async (message) => {
-        // A failed Brevo request must never be reported as a delivered code.
-        // No email address or OTP is written to application logs.
-        await sendOtpMail(message);
+        // Better Auth can swallow provider exceptions and still return HTTP 200.
+        // Record success/failure for this request without storing PII or OTPs.
+        try {
+          await sendOtpMail(message);
+          recordEmailDelivery(true);
+        } catch (error) {
+          recordEmailDelivery(false);
+          throw error;
+        }
       },
     });
   }

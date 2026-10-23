@@ -4,6 +4,7 @@ export const aiDraftRequestSchema = z.object({
   transcript: z.string().trim().min(160, "Paste more lesson material.").max(40_000),
   count: z.number().int().min(1).max(20),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
+  provider: z.enum(["gemini", "openrouter", "grok", "auto"]).default("auto"),
 }).strict();
 
 const questionSchema = z.object({

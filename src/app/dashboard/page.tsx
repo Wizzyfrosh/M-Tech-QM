@@ -8,12 +8,31 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { pageActor } from "@/lib/access";
+import { Brand } from "@/components/brand";
+import { SignOut } from "@/components/sign-out";
+import { pageIdentity } from "@/lib/access";
 import { getDb } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export default async function Dashboard() {
-  const actor = await pageActor();
+  const actor = await pageIdentity();
   const instructor = actor.role === "INSTRUCTOR";
+  if (!instructor && actor.roster?.status === "PENDING") {
+    return <main className="standalone" id="main">
+      <div className="pending-panel">
+        <Brand />
+        <span className="empty-icon"><Clock3 size={28}/></span>
+        <span className="eyebrow">EMAIL VERIFIED</span>
+        <h1>Waiting for instructor approval</h1>
+        <p>Hello {actor.name.split(" ")[0]}, your account is verified and your request has been received.</p>
+        <p>You can sign in at any time. Lessons, videos and quizzes will become available after your instructor approves your account.</p>
+        <div className="button-row">
+          <Link href="/account" className="button">Manage profile</Link>
+          <Link href="/dashboard" className="button primary">Check approval status</Link>
+          <SignOut />
+        </div>
+      </div>
+    </main>;
+  }
   const counts = instructor
     ? await getDb().$transaction([
         getDb().rosterEntry.count(),
@@ -21,10 +40,7 @@ export default async function Dashboard() {
           where: { status: "ACTIVE", user: { emailVerified: true } },
         }),
         getDb().rosterEntry.count({
-          where: {
-            status: "ACTIVE",
-            OR: [{ userId: null }, { user: { emailVerified: false } }],
-          },
+          where: { status: "PENDING", user: { emailVerified: true } },
         }),
       ])
     : null;
@@ -63,12 +79,12 @@ export default async function Dashboard() {
           </h2>
           <p>
             {instructor
-              ? "Add your students and give them a place to learn, practise and grow."
+              ? "Students register themselves. Review verified accounts and approve access."
               : "Your instructor will share a quiz link when your next assessment is ready."}
           </p>
           {instructor ? (
             <Link className="button primary" href="/instructor/students">
-              Manage students
+              Review student requests
               <ArrowRight size={17} />
             </Link>
           ) : (
@@ -89,7 +105,7 @@ export default async function Dashboard() {
         <div className="stats-grid">
           {[
             {
-              label: "Students on roster",
+              label: "Registered students",
               value: counts[0],
               icon: Users,
               hint: "Your whole community",
@@ -101,10 +117,10 @@ export default async function Dashboard() {
               hint: "Ready to start learning",
             },
             {
-              label: "Awaiting activation",
+              label: "Awaiting approval",
               value: counts[2],
               icon: Clock3,
-              hint: "Registration or verification pending",
+              hint: "Verified students waiting for access",
             },
           ].map((item) => (
             <section className="stat-card" key={item.label}>
@@ -158,7 +174,7 @@ export default async function Dashboard() {
           <span className="eyebrow">GETTING STARTED</span>
           <h2>
             {instructor
-              ? "Set your community up\nfor success."
+              ? "Approve students\nand start teaching."
               : "Make yourself at home."}
           </h2>
           <ol>
@@ -166,11 +182,11 @@ export default async function Dashboard() {
               <span>01</span>
               <div>
                 <strong>
-                  {instructor ? "Add your students" : "Check your profile"}
+                  {instructor ? "Review registrations" : "Check your profile"}
                 </strong>
                 <p>
                   {instructor
-                    ? "Use the email they’ll register with."
+                    ? "Review verified requests and approve them."
                     : "Make sure your display name is correct."}
                 </p>
               </div>
@@ -180,7 +196,7 @@ export default async function Dashboard() {
               <div>
                 <strong>
                   {instructor
-                    ? "Share the app link"
+                    ? "Approve students"
                     : "Keep your account secure"}
                 </strong>
                 <p>
@@ -198,7 +214,7 @@ export default async function Dashboard() {
                 </strong>
                 <p>
                   {instructor
-                    ? "See who is verified from your roster."
+                    ? "See who has permission to access quizzes."
                     : "Watch for the next lesson from your instructor."}
                 </p>
               </div>

@@ -11,14 +11,18 @@ export async function GET(request: Request) {
       Math.min(10000, Number(url.searchParams.get("page")) || 1),
     );
     const q = (url.searchParams.get("q") || "").slice(0, 80);
-    const where = q
-      ? {
-          OR: [
-            { name: { contains: q, mode: "insensitive" as const } },
-            { normalizedEmail: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {};
+    const requested = url.searchParams.get("status");
+    const status: "PENDING" | "ACTIVE" | "SUSPENDED" | null =
+      requested === "ACTIVE" || requested === "SUSPENDED" || requested === "PENDING"
+        ? requested : requested === "ALL" ? null : "PENDING";
+    const where = {
+      ...(status ? { status } : {}),
+      ...(status === "PENDING" ? { user: { emailVerified: true } } : {}),
+      ...(q ? { OR: [
+        { name: { contains: q, mode: "insensitive" as const } },
+        { normalizedEmail: { contains: q, mode: "insensitive" as const } },
+      ] } : {}),
+    };
     const db = getDb();
     const [entries, total] = await db.$transaction([
       db.rosterEntry.findMany({
@@ -64,6 +68,7 @@ export async function POST(request: Request) {
           name: data.name,
           normalizedEmail: data.email,
           userId: existing?.id,
+          status: "ACTIVE", // Explicit manual instructor override retained for legacy compatibility.
         },
         select: { id: true },
       });

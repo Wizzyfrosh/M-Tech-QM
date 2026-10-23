@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { Roster } from "@/components/roster";
+import { StudentApprovals } from "@/components/student-approvals";
 import { pageActor } from "@/lib/access";
 export const dynamic = "force-dynamic";
 export default async function Students() {
@@ -10,10 +10,10 @@ export default async function Students() {
         <div>
           <span className="eyebrow">YOUR COMMUNITY</span>
           <h1>Students</h1>
-          <p>A place for everyone who’s ready to learn.</p>
+          <p>Review registrations, approve students, and manage their access.</p>
         </div>
       </div>
-      <Roster />
+      <StudentApprovals />
     </AppShell>
   );
 }

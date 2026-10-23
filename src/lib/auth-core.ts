@@ -4,7 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { OtpMail } from "./mail";
-import { emailSchema, nameSchema, mayAccess } from "./policy";
+import { emailSchema, nameSchema, canSignIn } from "./policy";
 
 export function createAuth(
   db: PrismaClient,
@@ -36,7 +36,7 @@ export function createAuth(
     emailVerification: {
       sendOnSignUp: true,
       sendOnSignIn: false,
-      autoSignInAfterVerification: false,
+      autoSignInAfterVerification: true,
     },
     user: {
       changeEmail: { enabled: false },
@@ -83,15 +83,7 @@ export function createAuth(
               message: "Enter a name between 2 and 80 characters.",
             });
           ctx.body.name = parsed.data;
-          const entry = await db.rosterEntry.findUnique({
-            where: { normalizedEmail: ctx.body.email },
-          });
-          if (!entry || entry.status !== "ACTIVE")
-            throw new APIError("BAD_REQUEST", {
-              code: "ENROLLMENT_UNAVAILABLE",
-              message:
-                "Registration could not be completed. Contact your instructor.",
-            });
+          // A verified account requests instructor approval after signup.
         }
       }),
     },
@@ -110,10 +102,11 @@ export function createAuth(
             };
           },
           after: async (user) => {
-            // Link identity even if suspended during signup. Access checks still deny it.
-            await db.rosterEntry.updateMany({
-              where: { normalizedEmail: user.email, userId: null },
-              data: { userId: user.id },
+            // Preserve existing approvals but default all new self-registrations to pending.
+            await db.rosterEntry.upsert({
+              where: { normalizedEmail: user.email },
+              create: { normalizedEmail: user.email, name: user.name, userId: user.id, status: "PENDING" },
+              update: { userId: user.id },
             });
           },
         },
@@ -125,7 +118,7 @@ export function createAuth(
               where: { id: session.userId },
               include: { roster: true },
             });
-            if (!mayAccess(user))
+            if (!canSignIn(user))
               throw new APIError("FORBIDDEN", {
                 message:
                   "Account access is unavailable. Contact your instructor.",
@@ -138,6 +131,7 @@ export function createAuth(
     plugins: [
       emailOTP({
         overrideDefaultEmailVerification: true,
+        sendVerificationOnSignUp: true,
         disableSignUp: true,
         otpLength: 6,
         expiresIn: 600,

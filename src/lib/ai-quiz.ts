@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { AccessError } from "./access";
 import { validateGeneratedQuestions, type GeneratedQuestion } from "./ai-quiz-policy";
+import { aiProviderConfig, fromChatCompletions, type AiProvider } from "./ai-providers";
 
 const MODEL = "gemini-2.5-flash-lite";
 const DAILY_LIMIT = 10;
@@ -17,6 +18,7 @@ async function reserve(
   instructorId: string,
   quizId: string,
   count: number,
+  model: string,
 ) {
   return db.$transaction(async tx => {
     const quiz = await tx.quiz.findFirst({
@@ -39,7 +41,7 @@ async function reserve(
     `;
     if (!quota.length) throw new AccessError(429, "Daily AI draft limit reached. Manual editing remains available.");
     return tx.aiGeneration.create({
-      data: { id: randomUUID(), instructorId, quizId, count, model: MODEL, status: "STARTED" },
+      data: { id: randomUUID(), instructorId, quizId, count, model, status: "STARTED" },
       select: { id: true },
     });
   }, { timeout: 15000 });
@@ -151,30 +153,39 @@ export async function generateQuizDrafts(
   db: PrismaClient,
   actorId: string,
   quizId: string,
-  input: { transcript: string; count: number; difficulty: "beginner" | "intermediate" | "advanced" },
+  input: { transcript: string; count: number; difficulty: "beginner"|"intermediate"|"advanced"; provider?: "auto"|"gemini"|"openrouter"|"grok" },
   fetcher: typeof fetch = fetch,
 ) {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new AccessError(503, "AI drafts are not configured. Add GEMINI_API_KEY in the server environment.");
-  const record = await reserve(db, actorId, quizId, input.count);
+  // Never send course content to an unconfigured provider.
+  const preferred: AiProvider[] = input.provider && input.provider !== "auto"
+    ? [input.provider]
+    : ["gemini","openrouter","grok"];
+  const configured = preferred.filter(provider => !!aiProviderConfig(provider).key);
+  if (!configured.length) throw new AccessError(503, "No AI providers configured. Add a server-side Gemini, OpenRouter, or xAI key.");
+  const record = await reserve(db, actorId, quizId, input.count, configured[0]);
   try {
-    const generation = await requestGemini(input.transcript, input.count, input.difficulty, key, fetcher);
-    await db.aiGeneration.update({
-      where: { id: record.id },
-      data: { status: "SUCCEEDED", completedAt: new Date(),
-        inputTokens: generation.inputTokens, outputTokens: generation.outputTokens },
-    });
-    return {
-      questions: generation.questions,
-      generatedCount: generation.questions.length,
-      remainingToday: null,
-      reviewRequired: true,
-    };
-  } catch (error) {
-    await db.aiGeneration.update({ where: { id: record.id }, data: {
-      status: "FAILED", completedAt: new Date(),
-    } });
-    if (error instanceof AccessError) throw error;
-    throw new AccessError(503, "AI generation failed. You can still create questions manually.");
+    let finalError: unknown;
+    for(const provider of configured){
+      try {
+        const result = provider === "gemini"
+          ? { ...await requestGemini(input.transcript,input.count,input.difficulty,aiProviderConfig(provider).key!,fetcher), provider,model:MODEL }
+          : await fromChatCompletions(provider,input.transcript,input.count,input.difficulty,fetcher);
+        await db.aiGeneration.update({where:{id:record.id},data:{
+          status:"SUCCEEDED",completedAt:new Date(),model:provider+":"+result.model,
+          inputTokens:result.inputTokens,outputTokens:result.outputTokens,
+        }});
+        return {questions:result.questions,provider,model:result.model,generatedCount:result.questions.length,reviewRequired:true};
+      } catch(error) {
+        finalError=error;
+        // Unsupported content or badly-grounded output should be reviewed, not automatically sent to another provider.
+        if(!(error instanceof AccessError) || error.status !== 503 || input.provider !== "auto") break;
+      }
+    }
+    if(finalError instanceof AccessError)throw finalError;
+    throw new AccessError(503, "AI draft generation failed. Your quiz remains unchanged.");
+  } catch(error) {
+    await db.aiGeneration.update({where:{id:record.id},data:{status:"FAILED",completedAt:new Date()}});
+    if(error instanceof AccessError)throw error;
+    throw new AccessError(503, "AI draft generation failed. You can continue manually.");
   }
 }

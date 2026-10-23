@@ -63,3 +63,87 @@ The current implementation provides accounts, roster management and manual quiz 
 **Limits and resilience:** A single instructor can reserve up to 10 requests per UTC day with an atomic PostgreSQL request bucket; failed requests consume that quota. Generation is limited to 20 questions/request with a 25-second provider timeout and at most one retry for transient provider responses. Invalid output is rejected: four distinct options, one key, source excerpt literally supported by the supplied notes. On errors, no quiz content changes.
 
 **Release:** Apply migration `202610230005_ai_generations` to Neon production before deploying this commit. Do not merge or enable the production endpoint until CI, migrations and Vercel quota permit a verified release. Configure the production Gemini key before real teacher acceptance tests.
+
+ 
+## Preview and student signup verification
+
+The Git branch `preview/student-onboarding-multivideo-ai` is mapped to
+`https://mtech-qms-preview.froshcodeorbit.site`, using a separate Neon database
+and Better Auth secret. It must never use production DATABASE_URL or sessions.
+The initial preview instructor is an unredeemed invitation for the approved
+instructor email. Use the preview activation page to create preview-only
+credentials; the live production account remains unchanged.
+
+Student self-registration: Share `/sign-up` with your class. Students
+enter their own names, emails and passwords. Better Auth sends a six-digit
+verification code, and the interface opens the pre-filled OTP verification
+screen. After verifying and signing in, students see a pending-approval dashboard
+rather than lessons or quizzes. No instructor-entered student records or
+individual invite links are required.
+
+Instructor approval: Open `/instructor/students` and select
+**Awaiting approval**. Only students with verified emails appear in the approval
+queue. Approve one student or select up to 20 on the current page and approve
+the batch. Suspended students remain blocked; prior approved students retain
+their access. Approval takes effect at the next dashboard refresh without
+requiring a new verification code. `GET /api/quizzes`, individual quiz routes,
+attempts and results remain protected by the existing approved-access guard.
+Bulk writes are audited and restricted to the authenticated instructor.
+
+Preview migration requirements: first `202610230007_pending_roster_status`
+adds the PENDING enum value and then `202610230008_default_pending_students`
+changes the default. Apply them in that order. They do **not** rewrite existing
+approved or suspended student records.
+
+For testable preview mail delivery, BREVO_API_KEY and MAIL_FROM_EMAIL must be
+enabled on Vercel Preview in addition to Production. The sender domain must
+be verified in Brevo. Preview uses a separate Neon database; don't transfer
+production user sessions or credentials.
+
+## Multiple lesson video links
+
+Each quiz supports up to 20 ordered HTTPS video links. The first link also
+populates the legacy lessonUrl column for compatibility. Existing quizzes
+with one video are migrated safely. The application presents the videos in
+order on preview and student quiz detail pages. External videos remain hosted
+at their original service, subject to that provider's playback restrictions.
+
+## AI providers and fallback
+
+`GEMINI_API_KEY`, `OPENROUTER_API_KEY`, and `XAI_API_KEY` are server-only
+environment variables. A selected provider uses only its corresponding key.
+Automatic mode tries configured providers in the order Gemini, OpenRouter,
+and xAI Grok if a provider returns a temporary 503/quota error.
+The optional server-only `OPENROUTER_MODEL` defaults to `openrouter/free`.
+The optional `GROK_MODEL` defaults to `grok-4.3`.
+Grok is billable and OpenRouter's free model routing may have separate
+privacy/retention rules. Avoid confidential lesson content when using them.
+Provider credentials must not be exposed through NEXT_PUBLIC variables.
+Never assume the provider key is enabled until a live draft request succeeds.
+
+
+## Brevo student-verification troubleshooting
+
+A successful sign-up triggers a six-digit OTP send to the provided email. The
+server **awaits Brevo's HTTP response**; it never reports a successful send
+after a known rejection. Brevo acceptance does **not** guarantee inbox
+placement; check the inbox, spam folder, and Brevo transactional logs.
+
+Verify the following in Vercel for the exact preview Git branch:
+`BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, `BETTER_AUTH_URL`.
+The sender address or domain in `MAIL_FROM_EMAIL` must be authorized in Brevo.
+A key configured in Production alone does not necessarily cover Preview.
+The application never exposes keys or OTPs in runtime logs.
+
+Safe server error categories:
+- `QMS_BREVO_SEND_REJECTED` with provider HTTP status (often 400/401/403/429)
+- `QMS_BREVO_SEND_UNREACHABLE` for transport failures and timeouts
+- `Email delivery is not configured.` if required environment variables are empty
+
+If student signup created an account before an email transport failure, **do not
+register again**: open `/verify-email` and tap **Send a new code**. Codes
+expire in 10 minutes and are hashed in the database. The daily/session rate
+limits remain active. Verify real inbox receipt before production release.
+
+Responsive support now includes 320/360/390/760px layouts, touch-friendly
+authentication inputs and tabs, and instructor approval cards on phones.

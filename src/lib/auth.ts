@@ -1,8 +1,8 @@
 import "server-only";
-import { after } from "next/server";
 import { createAuth } from "./auth-core";
 import { getDb } from "./db";
 import { sendOtpMail } from "./mail";
+import { recordEmailDelivery } from "./otp-delivery-receipt";
 let auth: ReturnType<typeof createAuth> | undefined;
 export function getAuth() {
   if (!auth) {
@@ -19,14 +19,15 @@ export function getAuth() {
       url,
       secret,
       sendMail: async (message) => {
-        // Retain serverless lifetime without exposing account existence through provider latency.
-        after(async () => {
-          try {
-            await sendOtpMail(message);
-          } catch {
-            console.error("QMS_EMAIL_DELIVERY_FAILED");
-          }
-        });
+        // Better Auth can swallow provider exceptions and still return HTTP 200.
+        // Record success/failure for this request without storing PII or OTPs.
+        try {
+          await sendOtpMail(message);
+          recordEmailDelivery(true);
+        } catch (error) {
+          recordEmailDelivery(false);
+          throw error;
+        }
       },
     });
   }

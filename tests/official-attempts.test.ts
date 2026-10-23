@@ -43,7 +43,7 @@ beforeAll(async () => {
     const email = `assessment-${id}@example.test`;
     await db.user.create({ data: { id, name: role, email, role, emailVerified: true } });
     if (role === "INSTRUCTOR") { owner = id; continue; }
-    await db.rosterEntry.create({ data: { normalizedEmail: email, name: role, userId: id } });
+    await db.rosterEntry.create({ data: { normalizedEmail: email, name: role, userId: id, status: "ACTIVE" } });
     if (!student) student = id; else otherStudent = id;
   }
   const draft = {

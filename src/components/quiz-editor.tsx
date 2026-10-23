@@ -34,6 +34,7 @@ function draftOf(q: EditorQuiz): QuizDraft {
     lessonLabel: q.lessonLabel,
     description: q.description,
     lessonUrl: q.lessonUrl,
+    lessonUrls: q.lessonUrls ?? (q.lessonUrl ? [q.lessonUrl] : []),
     deadline: q.deadline,
     reviewMode: q.reviewMode,
     leaderboardEnabled: q.leaderboardEnabled,
@@ -336,19 +337,30 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
                   placeholder="What should students know before starting?"
                 />
               </label>
-              <label>
-                Lesson link (optional)
-                <input
-                  type="url"
-                  value={draft.lessonUrl || ""}
-                  onChange={(e) => change("lessonUrl", e.target.value)}
-                  placeholder="https://…"
-                  maxLength={2000}
-                />
-                <small>
-                  Link to a lesson you already shared. HTTPS links only.
-                </small>
-              </label>
+              <div className="form-stack">
+                <div className="panel-heading"><div><h3>Lesson video links</h3>
+                  <p>Add up to 20 ordered video parts. Students can open each part separately.</p></div></div>
+                {(draft.lessonUrls ?? (draft.lessonUrl ? [draft.lessonUrl] : [])).map((url, i) => (
+                  <label key={i}>Video part {i + 1}
+                    <div className="button-row">
+                      <input type="url" required placeholder="https://…" maxLength={2000}
+                        value={url} onChange={e => {
+                          const links = [...(draft.lessonUrls ?? [])];
+                          links[i] = e.target.value;
+                          setDraft(current => ({...current,lessonUrls:links,lessonUrl:links[0] ?? ""}));
+                        }} />
+                      <button type="button" className="button" onClick={() => {
+                        const links = (draft.lessonUrls ?? []).filter((_,index)=>index!==i);
+                        setDraft(current=>({...current,lessonUrls:links,lessonUrl:links[0] ?? ""}));
+                      }}><Trash2 size={16}/> Remove</button>
+                    </div>
+                  </label>
+                ))}
+                {(draft.lessonUrls?.length ?? 0) < 20 && <button type="button" className="button" onClick={() =>
+                  setDraft(current=>({...current,lessonUrls:[...(current.lessonUrls ?? []), ""]}))
+                }><Plus size={16}/> Add video part</button>}
+                <small>HTTPS only. Link sharing does not grant control over external hosting, playback or downloading.</small>
+              </div>
             </fieldset>
           </section>
           <section className="question-section">

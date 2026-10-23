@@ -33,7 +33,7 @@ async function mailCode(email: string, type: string, sentAfter: number) {
     .toBe(6);
   return otp;
 }
-test("instructor adds a student; student verifies, signs in, recovers and loses access when suspended", async ({
+test("student self-registers and verifies; instructor approves and may later suspend access", async ({
   browser,
   page,
 }) => {
@@ -54,14 +54,10 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await expect(
     page.getByRole("heading", { name: "Students", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Full name", { exact: true }).fill("Browser Student");
-  await page
-    .getByLabel("Email address", { exact: true })
-    .fill("browser@example.test");
-  await page.getByRole("button", { name: "Add student", exact: true }).click();
-  await expect(
-    page.getByText("browser@example.test", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Student approvals"})).toBeVisible();
+  await page.setViewportSize({width:360,height:780});
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.setViewportSize({width:1280,height:800});
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });
@@ -81,15 +77,13 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByRole("button", { name: "Create account", exact: true })
     .click();
-  await expect(student.getByRole("status")).toContainText("verification code");
+  await expect(student).toHaveURL(/\/verify-email\?email=browser%40example.test/);
   const otp = await mailCode(
     "browser@example.test",
     "email-verification",
     verificationSentAfter,
   );
-  await student
-    .getByRole("link", { name: "Continue to email verification" })
-    .click();
+
   await expect(
     student.getByRole("heading", { name: "Verify your email", exact: true }),
   ).toBeVisible();
@@ -100,24 +94,25 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByRole("button", { name: "Verify email", exact: true })
     .click();
-  await expect(student.getByRole("status")).toContainText("Email verified");
-  await student.getByRole("link", { name: "Back to sign in" }).click();
-  await expect(
-    student.getByRole("heading", {
-      name: "Sign in to your account",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await student
-    .getByLabel("Email address", { exact: true })
-    .fill("browser@example.test");
-  await student
-    .getByLabel("Password", { exact: true })
-    .fill("Secur3!!");
-  await student.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(
-    student.getByRole("heading", { name: "Welcome back, Browser." }),
-  ).toBeVisible();
+  await expect(student).toHaveURL(/\/dashboard/);
+  await expect(student.getByRole("heading",{
+    name:"Waiting for instructor approval"
+  })).toBeVisible();
+  expect(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await context.request.get("/api/quizzes")).status()).toBe(403);
+  await student.goto("/student/quizzes");
+  await expect(student).toHaveURL(/\/dashboard/);
+  await page.reload();
+  await expect(page.locator(".approval-desktop").getByText("browser@example.test", {exact:true})).toBeVisible();
+  await page.setViewportSize({width:360,height:780});
+  await expect(page.locator(".approval-mobile-list")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.setViewportSize({width:1280,height:800});
+  await page.getByRole("row").filter({hasText:"browser@example.test"})
+    .getByRole("button",{name:"Approve",exact:true}).click();
+  await expect(page.locator(".approval-desktop").getByText("browser@example.test",{exact:true})).toHaveCount(0);
+  await student.reload();
+  await expect(student.getByRole("heading", {name:"Welcome back, Browser."})).toBeVisible();
   expect(
     await student.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -186,15 +181,21 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
     student.getByRole("heading", { name: "Welcome back, Updated." }),
   ).toBeVisible();
   await page.reload();
+  await page.getByRole("button",{name:"Approved",exact:true}).click();
+  const suspensionResponse = page.waitForResponse(response =>
+    response.url().includes("/api/instructor/students/") &&
+    response.request().method() === "PATCH",
+  );
   await page
     .getByRole("row")
     .filter({ hasText: "browser@example.test" })
     .getByRole("button", { name: "Suspend", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Suspend access", exact: true })
-    .click();
-  await expect(page.getByText("Suspended", { exact: true })).toBeVisible();
+
+  expect((await suspensionResponse).status()).toBe(200);
+  await expect(page.getByRole("status").filter({ hasText: "Student access suspended." })).toBeVisible();
+  await expect(page.locator(".approval-desktop").getByText("browser@example.test", { exact: true })).toHaveCount(0);
+  expect((await context.request.get("/api/quizzes")).status()).toBe(401);
   await student.reload();
   await expect(student).toHaveURL(/sign-in/);
   await page.screenshot({

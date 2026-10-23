@@ -10,7 +10,7 @@ export const studentSchema = z
   .strict();
 export const studentUpdateSchema = z
   .object({
-    status: z.enum(["ACTIVE", "SUSPENDED"]),
+    status: z.enum(["ACTIVE", "PENDING", "SUSPENDED"]),
     revision: z.number().int().nonnegative(),
   })
   .strict();
@@ -37,6 +37,13 @@ export function safeReturnTo(value: unknown): string {
   } catch {
     return "/dashboard";
   }
+}
+export const bulkApprovalSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(100).refine(ids => new Set(ids).size === ids.length, "Remove duplicate students."),
+}).strict();
+export function canSignIn(user: { role: string; emailVerified: boolean; roster: { status: string } | null } | null): boolean {
+  return !!user?.emailVerified && (user.role === "INSTRUCTOR" ||
+    (user.role === "STUDENT" && ["PENDING", "ACTIVE"].includes(user.roster?.status ?? "")));
 }
 export function mayAccess(
   user: {

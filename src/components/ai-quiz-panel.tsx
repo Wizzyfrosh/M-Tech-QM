@@ -15,6 +15,7 @@ export function AiQuizPanel({
   const [transcript, setTranscript] = useState("");
   const [count, setCount] = useState(5);
   const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [provider, setProvider] = useState<"auto"|"gemini"|"openrouter"|"grok">("auto");
   const [generated, setGenerated] = useState<GeneratedQuestion[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ export function AiQuizPanel({
       const response = await fetch(`/api/instructor/quizzes/${quizId}/ai-drafts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, count: Math.min(count, countLimit), difficulty }),
+        body: JSON.stringify({ transcript, count: Math.min(count, countLimit), difficulty, provider }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Could not generate questions.");
@@ -38,7 +39,7 @@ export function AiQuizPanel({
       setGenerated(questions);
       setSelected(questions.map((_, index) => index));
       setTranscript("");
-      setMessage(`${questions.length} suggestions generated. Check the facts and answer keys before using them.`);
+      setMessage(`${questions.length} suggestions generated with ${body.provider ?? provider}. Check facts and answers before using them.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation unavailable.");
     } finally { setLoading(false); }
@@ -64,7 +65,7 @@ export function AiQuizPanel({
         <h2>Generate from lesson notes</h2>
         <p>Review everything yourself. AI never publishes a quiz or marks questions as reviewed.</p></div>
     </div>
-    <p className="notice"><ShieldCheck size={17}/> Your pasted text goes to Google Gemini for processing. Avoid student personal data, private credentials or confidential material. Transcript text is not saved in your quiz database.</p>
+    <p className="notice"><ShieldCheck size={17}/> Your lesson text is sent to the chosen AI provider. Automatic fallback may send it to multiple providers (Google Gemini, OpenRouter or xAI). Free models may have different data retention policies. Never paste student details, credentials or confidential notes. We do not store your transcript in Neon.</p>
     <form className="form-stack" onSubmit={generate}>
       <label>Lesson notes or transcript
         <textarea value={transcript} onChange={event => setTranscript(event.target.value)}
@@ -80,6 +81,16 @@ export function AiQuizPanel({
             onChange={event => setCount(Math.max(1, Math.min(20, Number(event.target.value) || 1)))}
             disabled={disabled || loading || !availableSlots}/>
           <small>1–20 per request · {availableSlots} slots left</small>
+        </label>
+        <label>AI provider
+          <select value={provider} disabled={disabled || loading}
+            onChange={event=>setProvider(event.target.value as typeof provider)}>
+            <option value="auto">Automatic fallback</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="grok">xAI Grok</option>
+          </select>
+          <small>Automatic tries configured providers in order. Some providers charge per token.</small>
         </label>
         <label>Difficulty
           <select value={difficulty} disabled={disabled || loading}

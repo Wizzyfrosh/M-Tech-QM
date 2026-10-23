@@ -10,12 +10,14 @@ type Mode =
 export function AuthForm({
   mode,
   returnTo = "/dashboard",
+  initialEmail = "",
 }: {
   mode: Mode;
   returnTo?: string;
+  initialEmail?: string;
 }) {
   const hydrated = useHydrated();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -33,7 +35,7 @@ export function AuthForm({
   };
   const subtitles = {
     "sign-in": "Your next step starts here. Pick up where you left off.",
-    "sign-up": "Use the email your instructor added to the student roster.",
+    "sign-up": "Create your account, verify your email, then wait for your instructor to approve access.",
     "verify-email":
       "Enter the six-digit code sent to your email. Codes expire after 10 minutes.",
     "forgot-password": "We’ll send a code if this email has an account.",
@@ -68,12 +70,14 @@ export function AuthForm({
         });
         if (result.error)
           setError(
-            "Registration could not be completed. Check your details and try again.",
+            result.error.status >= 500
+              ? "Your registration may have been saved, but we could not send the verification email. Open Verify email below to request a new code."
+              : (result.error.message || "Registration failed. Check your details and try again."),
           );
-        else
-          setMessage(
-            "If your email is eligible, a verification code will arrive shortly. Continue to verify your email.",
-          );
+        else {
+          window.location.assign(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
+          return;
+        }
       } else if (mode === "verify-email") {
         const result = await authClient.emailOtp.verifyEmail({
           email: email.trim(),
@@ -83,7 +87,15 @@ export function AuthForm({
           setError(
             "The code is invalid or expired. Request a new code and try again.",
           );
-        else setMessage("Email verified. You can now sign in.");
+        else {
+          // Better Auth can establish the session as part of OTP verification.
+          // Use a prefilled sign-in fallback only when no session was issued.
+          const session = await authClient.getSession();
+          window.location.assign(session.data?.session
+            ? safeReturnTo(returnTo)
+            : `/sign-in?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
+          return;
+        }
       } else if (mode === "forgot-password") {
         const result = await authClient.emailOtp.requestPasswordReset({
           email: email.trim(),
@@ -130,11 +142,11 @@ export function AuthForm({
       });
       if (result.error)
         setError(
-          "Unable to request a code. Check your email and try again later.",
+          "We couldn't send a verification code. Check your email and try again shortly. If the problem persists, contact your instructor.",
         );
       else
         setMessage(
-          "If your account needs verification, a new code will arrive shortly.",
+          "Code request accepted. Check your inbox and spam folder; delivery may take a moment.",
         );
     } catch {
       setError("Check your connection and try again.");
@@ -266,14 +278,14 @@ export function AuthForm({
               New to the community?{" "}
               <Link href={`/sign-up?next=${next}`}>Create an account</Link>
             </p>
-            <Link href={`/verify-email?next=${next}`}>Verify your email</Link>
+            <Link href={`/verify-email?email=${encodeURIComponent(email)}&next=${next}`}>Verify your email</Link>
             <Link href="/activate-instructor">First instructor? Activate your account</Link>
           </>
         )}
         {mode === "sign-up" && (
           <>
-            <Link href={`/verify-email?next=${next}`}>
-              Continue to email verification
+            <Link href={`/verify-email?email=${encodeURIComponent(email)}&next=${next}`}>
+              Already registered or didn&apos;t receive a code? Verify email or resend
             </Link>
             <p>
               Already registered?{" "}

@@ -13,6 +13,7 @@ enum Role {
 }
 
 enum RosterStatus {
+  PENDING
   ACTIVE
   SUSPENDED
 }
@@ -92,7 +93,7 @@ model RosterEntry {
   id              String       @id @default(uuid())
   normalizedEmail String       @unique
   name            String
-  status          RosterStatus @default(ACTIVE)
+  status          RosterStatus @default(PENDING)
   revision        Int          @default(0)
   userId          String?      @unique
   user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -141,6 +142,7 @@ model Quiz {
   lessonLabel        String     @default("")
   description        String     @default("")
   lessonUrl          String?
+  lessonUrls         String[]   @default([])
   deadline           DateTime?
   status             QuizStatus @default(DRAFT)
   revision           Int        @default(0)

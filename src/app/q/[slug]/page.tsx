@@ -79,15 +79,15 @@ export default async function Page({
             </dd>
           </div>
         </dl>
-        {quiz.lessonUrl && (
-          <a
-            className="button"
-            href={quiz.lessonUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open lesson
-          </a>
+        {((quiz.lessonUrls?.length ? quiz.lessonUrls : quiz.lessonUrl ? [quiz.lessonUrl] : [])).length > 0 && (
+          <div className="form-stack">
+            <h3>Lesson videos</h3>
+            {(quiz.lessonUrls?.length ? quiz.lessonUrls : [quiz.lessonUrl!]).map((url, i) =>
+              <a key={i} className="button" href={url} target="_blank" rel="noopener noreferrer">
+                <BookOpen size={17}/> Watch part {i + 1}
+              </a>
+            )}
+          </div>
         )}
         <p className="notice quiz-lock">
           <LockKeyhole size={17} />

@@ -4,7 +4,7 @@ A mobile-friendly quiz workspace for one programming instructor and a private st
 
 ## Implementation status
 
-Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Quiz creation, attempts, grading, reports, leaderboards and AI drafting remain upcoming milestones. The application has not been deployed or connected to production services.
+Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Milestone 2 adds manual multiple-choice quiz authoring, reviewed-answer validation, instructor preview, publication, shared details links, duplication, closure and archiving. Published questions and answer keys are locked. Student attempts, grading, reports, leaderboard rankings and AI drafting remain upcoming milestones. The application has not been deployed or connected to production services.
 
 ## Stack
 
@@ -17,10 +17,12 @@ Next.js 16, React 19, TypeScript, Tailwind CSS 4, PostgreSQL, Prisma 7 and Bette
 3. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` and save it as `BETTER_AUTH_SECRET`. Keep it private.
 4. Set `BETTER_AUTH_URL=http://localhost:3000`. Use the same host when opening the app; origins must match.
 5. Set `MAIL_TRANSPORT=file` for local development. Codes will be written into the ignored `.local-mail` directory. This transport cannot deliver mail in a production build. For Brevo, see [configuration](docs/SETUP.md).
-6. Run `npm run db:migrate` to apply the committed migration to the development database.
+6. Run `npm run db:migrate` to apply the committed migrations to the development database.
 7. Prepare the single instructor account: `npm run instructor:setup -- --email owner@example.com --name "Instructor name"`.
 8. Run `npm run dev`, open `/forgot-password`, request a code for that instructor email and use it on `/reset-password` to choose a password. The code proves email ownership and verifies the account. Then sign in.
 9. Open **Students**, add a student's name/email, and share the application link. The student registers, verifies their email code and signs in. Adding a student does not send an invitation.
+
+After signing in as the instructor, open **Quizzes**, create a draft, add four-option questions and review each correct answer and explanation. Save and preview before publishing. Published links currently show quiz details; students cannot submit attempts yet. Deadlines use West Africa Time (UTC+1).
 
 The instructor setup command generates an undisclosed random initial password and refuses to create a second instructor. There is no public role-selection or instructor-creation endpoint.
 

@@ -33,13 +33,20 @@ export async function requireInstructor(requestHeaders: Headers) {
     throw new AccessError(403, "Instructor access required.");
   return actor;
 }
-export async function pageActor(role?: "INSTRUCTOR" | "STUDENT") {
+export async function pageActor(
+  role?: "INSTRUCTOR" | "STUDENT",
+  returnTo = "/dashboard",
+) {
   let actor;
   try {
     actor = await getActor(await headers());
   } catch (error) {
     if (error instanceof AccessError)
-      redirect(error.status === 401 ? "/sign-in" : "/access-denied");
+      redirect(
+        error.status === 401
+          ? `/sign-in?next=${encodeURIComponent(returnTo)}`
+          : "/access-denied",
+      );
     throw error;
   }
   if (role && actor.role !== role) redirect("/dashboard");

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { readdir, readFile } from "node:fs/promises";
-async function mailCode(email: string, type: string) {
+import { readdir, readFile, stat } from "node:fs/promises";
+async function mailCode(email: string, type: string, sentAfter: number) {
   let otp = "";
   await expect
     .poll(
@@ -8,13 +8,21 @@ async function mailCode(email: string, type: string) {
         try {
           const files = await readdir(".local-mail");
           const messages = await Promise.all(
-            files.map(async (f) =>
-              JSON.parse(await readFile(`.local-mail/${f}`, "utf8")),
-            ),
+            files.map(async (f) => ({
+              ...JSON.parse(await readFile(`.local-mail/${f}`, "utf8")),
+              writtenAt: (await stat(`.local-mail/${f}`)).mtimeMs,
+            })),
           );
           otp =
-            messages.filter((m) => m.email === email && m.type === type).at(-1)
-              ?.otp || "";
+            messages
+              .filter(
+                (m) =>
+                  m.email === email &&
+                  m.type === type &&
+                  m.writtenAt >= sentAfter,
+              )
+              .sort((a, b) => a.writtenAt - b.writtenAt)
+              .at(-1)?.otp || "";
           return otp.length;
         } catch {
           return 0;
@@ -69,11 +77,16 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByLabel("Password", { exact: true })
     .fill("Synthetic-student-password-123!");
+  const verificationSentAfter = Date.now();
   await student
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await expect(student.getByRole("status")).toContainText("verification code");
-  const otp = await mailCode("browser@example.test", "email-verification");
+  const otp = await mailCode(
+    "browser@example.test",
+    "email-verification",
+    verificationSentAfter,
+  );
   await student
     .getByRole("link", { name: "Continue to email verification" })
     .click();
@@ -132,9 +145,14 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByLabel("Email address", { exact: true })
     .fill("browser@example.test");
+  const recoverySentAfter = Date.now();
   await student.getByRole("button", { name: "Send recovery code" }).click();
   await expect(student.getByRole("status")).toContainText("recovery code");
-  const recovery = await mailCode("browser@example.test", "forget-password");
+  const recovery = await mailCode(
+    "browser@example.test",
+    "forget-password",
+    recoverySentAfter,
+  );
   await student
     .getByRole("link", { name: "I have a code — reset password" })
     .click();
@@ -168,7 +186,11 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
     student.getByRole("heading", { name: "Welcome back, Updated." }),
   ).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Suspend", exact: true }).click();
+  await page
+    .getByRole("row")
+    .filter({ hasText: "browser@example.test" })
+    .getByRole("button", { name: "Suspend", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Suspend access", exact: true })
     .click();

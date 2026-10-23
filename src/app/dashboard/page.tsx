@@ -131,17 +131,26 @@ export default async function Dashboard() {
                   : "Your next opportunity to put learning into practice."}
               </p>
             </div>
-            <span className="badge lavender">Coming next</span>
+            <Link
+              className="text-button"
+              href={instructor ? "/instructor/quizzes" : "/student/quizzes"}
+            >
+              View quizzes
+            </Link>
           </div>
           <div className="empty">
             <span className="empty-icon">
               <BookOpen size={28} />
             </span>
-            <h3>Quiz workspace is on its way</h3>
+            <h3>
+              {instructor
+                ? "A focused space for every lesson"
+                : "Find your next quiz"}
+            </h3>
             <p>
               {instructor
-                ? "Student access is ready to set up. Quiz creation and publishing are the next milestone."
-                : "You can set up your account now. Assessments will appear here once the quiz workspace is available."}
+                ? "Create questions, review your answer key and publish a private quiz link."
+                : "Open your quiz list to see what your instructor has shared."}
             </p>
           </div>
         </section>

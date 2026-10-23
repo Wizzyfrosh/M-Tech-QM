@@ -1,5 +1,5 @@
+import { applyTestMigrations } from "../scripts/test-migrations";
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
-import { readFile } from "node:fs/promises";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PGlite } from "@electric-sql/pglite";
@@ -82,12 +82,7 @@ beforeAll(async () => {
   }
   const pool = new Pool({ connectionString: url, max: 1 });
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
-  await pool.query(
-    await readFile(
-      "prisma/migrations/202610230001_foundation/migration.sql",
-      "utf8",
-    ),
-  );
+  await applyTestMigrations(pool);
   await pool.end();
   db = new PrismaClient({
     adapter: new PrismaPg({ connectionString: url, max: lite ? 1 : 5 }),

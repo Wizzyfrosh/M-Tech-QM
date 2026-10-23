@@ -10,6 +10,8 @@ Acceptance: an allowed email can verify and sign in; an unlisted email cannot en
 
 ## Milestone 2 — Manual quiz creation and publishing
 
+Implemented in the quiz-authoring branch. This change is stacked on the accounts/roster foundation pull request. Student links intentionally stop at published metadata until Milestone 3 adds official attempts.
+
 Build quiz list/editor, four-option multiple-choice questions, marks, preview, optional lesson link, deadline and review settings. Add draft delete, duplicate, close and archive. Enforce lifecycle and reviewed-answer validation on the server.
 
 Acceptance: publishing an incomplete question fails; unauthorized students cannot fetch drafts or keys; editing published content fails; duplication creates a separate editable draft; closing/archiving retains history; deadline is clearly shown in Lagos time.

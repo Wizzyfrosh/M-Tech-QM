@@ -81,15 +81,13 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByRole("button", { name: "Create account", exact: true })
     .click();
-  await expect(student.getByRole("status")).toContainText("verification code");
+  await expect(student).toHaveURL(/\/verify-email\?email=browser%40example.test/);
   const otp = await mailCode(
     "browser@example.test",
     "email-verification",
     verificationSentAfter,
   );
-  await student
-    .getByRole("link", { name: "Continue to email verification" })
-    .click();
+
   await expect(
     student.getByRole("heading", { name: "Verify your email", exact: true }),
   ).toBeVisible();
@@ -100,8 +98,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student
     .getByRole("button", { name: "Verify email", exact: true })
     .click();
-  await expect(student.getByRole("status")).toContainText("Email verified");
-  await student.getByRole("link", { name: "Back to sign in" }).click();
+  await expect(student).toHaveURL(/\/sign-in\?email=browser%40example.test/);
   await expect(
     student.getByRole("heading", {
       name: "Sign in to your account",

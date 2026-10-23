@@ -138,6 +138,7 @@ export function createAuth(
     plugins: [
       emailOTP({
         overrideDefaultEmailVerification: true,
+        sendVerificationOnSignUp: true,
         disableSignUp: true,
         otpLength: 6,
         expiresIn: 600,

@@ -57,8 +57,6 @@ export async function redeemInstructorActivation(
 ) {
   const allowed = await consumeEmailQuota(db, email, "instructor-activation-redeem", secret(), 10);
   if (!allowed) throw new AccessError(429, "Too many attempts. Try again later.");
-  // CPU-intensive password hashing happens before acquiring a database lock.
-  const passwordHash = await hashPassword(password);
   const outcome = await db.$transaction(async (tx: Prisma.TransactionClient) => {
     const rows = await tx.$queryRaw<{ id: string }[]>`SELECT "id" FROM "InstructorInvitation" WHERE "id"='primary' FOR UPDATE`;
     if (!rows.length) return "denied" as const;
@@ -76,6 +74,9 @@ export async function redeemInstructorActivation(
       return "denied" as const;
     }
     if (await tx.user.findUnique({ where: { email }, select: { id: true } })) return "denied" as const;
+    // Hash only after a valid single-use code; unauthenticated callers cannot
+    // force expensive password hashing with arbitrary email addresses.
+    const passwordHash = await hashPassword(password);
     const id = randomUUID();
     await tx.user.create({ data: {
       id, name: invite.name, email, emailVerified: true, role: "INSTRUCTOR",

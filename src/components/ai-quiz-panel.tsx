@@ -65,7 +65,7 @@ export function AiQuizPanel({
         <h2>Generate from lesson notes</h2>
         <p>Review everything yourself. AI never publishes a quiz or marks questions as reviewed.</p></div>
     </div>
-    <p className="notice"><ShieldCheck size={17}/> Your pasted text goes to Google Gemini for processing. Avoid student personal data, private credentials or confidential material. Transcript text is not saved in your quiz database.</p>
+    <p className="notice"><ShieldCheck size={17}/> Your lesson text is sent to the chosen AI provider. Automatic fallback may send it to multiple providers (Google Gemini, OpenRouter or xAI). Free models may have different data retention policies. Never paste student details, credentials or confidential notes. We do not store your transcript in Neon.</p>
     <form className="form-stack" onSubmit={generate}>
       <label>Lesson notes or transcript
         <textarea value={transcript} onChange={event => setTranscript(event.target.value)}

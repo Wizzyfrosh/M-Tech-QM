@@ -30,7 +30,7 @@ export async function requestInstructorActivation(db: PrismaClient, email: strin
     const rows = await tx.$queryRaw<{ id: string }[]>`SELECT "id" FROM "InstructorInvitation" WHERE "id"='primary' FOR UPDATE`;
     if (!rows.length) return null;
     const invite = await tx.instructorInvitation.findUnique({ where: { id: "primary" } });
-    if (!invite || invite.email !== email || invite.redeemedAt || invite.failedAttempts >= 5
+    if (!invite || invite.email !== email || invite.redeemedAt
         || await tx.user.findFirst({ where: { role: "INSTRUCTOR" }, select: { id: true } })
         || await tx.user.findUnique({ where: { email }, select: { id: true } })) return null;
     const now = new Date();

@@ -29,12 +29,17 @@ export function editorData(quiz: DetailedQuiz) {
     ...draftData(quiz),
   };
 }
+function lessonLinkValues(draft: { lessonUrl?: string | null; lessonUrls?: string[] }) {
+  const urls = draft.lessonUrls?.length ? draft.lessonUrls : (draft.lessonUrl ? [draft.lessonUrl] : []);
+  return { lessonUrl: urls[0] ?? null, lessonUrls: urls };
+}
 function draftData(quiz: DetailedQuiz): QuizDraft {
   return {
     title: quiz.title,
     lessonLabel: quiz.lessonLabel,
     description: quiz.description,
     lessonUrl: quiz.lessonUrl,
+    lessonUrls: quiz.lessonUrls.length ? quiz.lessonUrls : (quiz.lessonUrl ? [quiz.lessonUrl] : []),
     deadline: quiz.deadline?.toISOString() ?? null,
     reviewMode: quiz.reviewMode,
     leaderboardEnabled: quiz.leaderboardEnabled,
@@ -105,7 +110,8 @@ export async function createQuiz(
       const row = await tx.quiz.create({
         data: {
           ...values,
-          lessonUrl: values.lessonUrl || null,
+          lessonUrl: lessonLinkValues(values).lessonUrl,
+          lessonUrls: lessonLinkValues(values).lessonUrls,
           createdBy: actorId,
         },
       });
@@ -162,7 +168,8 @@ export async function saveQuiz(
         where: { id },
         data: {
           ...values,
-          lessonUrl: values.lessonUrl || null,
+          lessonUrl: lessonLinkValues(values).lessonUrl,
+          lessonUrls: lessonLinkValues(values).lessonUrls,
           revision: { increment: 1 },
         },
       });
@@ -325,6 +332,7 @@ export const quizSummarySelect = {
   lessonLabel: true,
   description: true,
   lessonUrl: true,
+  lessonUrls: true,
   status: true,
   deadline: true,
   leaderboardEnabled: true,

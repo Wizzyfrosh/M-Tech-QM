@@ -5,6 +5,7 @@ import {
   UserRound,
   ArrowUpRight,
   BookOpen,
+  ClipboardList,
 } from "lucide-react";
 import { Brand } from "./brand";
 import { SignOut } from "./sign-out";
@@ -42,6 +43,7 @@ export function AppShell({
       icon: BookOpen,
       id: "quizzes",
     },
+    ...(role === "STUDENT" ? [{ href: "/student/results", label: "Results", icon: ClipboardList, id: "history" }] : []),
     { href: "/account", label: "My account", icon: UserRound, id: "account" },
   ];
   return (

@@ -10,18 +10,13 @@ export async function POST(request: Request) {
     const actor = await requireInstructor(request.headers);
     const { ids } = await readJson(request, bulkApprovalSchema);
     const result = await getDb().$transaction(async tx => {
-      // Confirm verified pending identities while holding their row locks.
-      const records = await tx.$queryRaw<Array<{ id: string }>>`
-        SELECT r."id"
-        FROM "RosterEntry" r
-        JOIN "User" u ON u."id" = r."userId"
-        WHERE r."id" = ANY(${ids}::text[])
-          AND r."status" = 'PENDING'
-          AND u."emailVerified" = true
-          AND u."role" = 'STUDENT'
-        ORDER BY r."id"
-        FOR UPDATE OF r
-      `;
+      // Optimistically select only verified pending students and verify the
+      // affected count in the same transaction to reject concurrent approvals.
+      const records = await tx.rosterEntry.findMany({
+        where: { id: { in: ids }, status: "PENDING",
+          user: { emailVerified: true, role: "STUDENT" } },
+        select: { id: true },
+      });
       const eligible = records.map(r => r.id);
       if (eligible.length) {
         const changed = await tx.rosterEntry.updateMany({

@@ -232,3 +232,16 @@ model AttemptAnswer {
 
   @@id([attemptId, questionId])
 }
+
+model InstructorInvitation {
+  id             String    @id @default("primary")
+  email          String    @unique
+  name           String
+  codeHash       String?
+  expiresAt      DateTime?
+  requestedAt    DateTime?
+  failedAttempts Int       @default(0)
+  redeemedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

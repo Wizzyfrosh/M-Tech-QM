@@ -36,7 +36,7 @@ export function createAuth(
     emailVerification: {
       sendOnSignUp: true,
       sendOnSignIn: false,
-      autoSignInAfterVerification: false,
+      autoSignInAfterVerification: true,
     },
     user: {
       changeEmail: { enabled: false },

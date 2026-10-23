@@ -52,7 +52,7 @@ BEGIN
   IF current_status <> 'IN_PROGRESS' THEN
     RAISE EXCEPTION 'Submitted attempts are immutable' USING ERRCODE = '23514';
   END IF;
-  IF TG_OP <> 'INSERT' AND NEW."attemptId" IS DISTINCT FROM OLD."attemptId" THEN
+  IF TG_OP = 'UPDATE' AND NEW."attemptId" IS DISTINCT FROM OLD."attemptId" THEN
     RAISE EXCEPTION 'Cannot transfer assessment answers' USING ERRCODE = '23514';
   END IF;
   IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;

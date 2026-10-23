@@ -224,6 +224,22 @@ describe("foundation authorization and account flow", () => {
       auth = original;
     }
   });
+  it("resends verification for a repeated unverified signup without changing its password", async () => {
+    const email = "registration-retry@example.test";
+    const original = { name: "Registration Retry", email, password };
+    expect((await authPost(request("/api/auth/sign-up/email", original))).status).toBe(200);
+    const before = await db.user.findUniqueOrThrow({ where: { email } });
+    const credential = await db.account.findFirstOrThrow({ where: { userId: before.id, providerId: "credential" } });
+    const sent = mail.filter(m => m.email === email).length;
+    const retry = await authPost(request("/api/auth/sign-up/email", {
+      ...original, password: "Different-password-987!",
+    }));
+    expect(retry.status, await retry.clone().text()).toBe(200);
+    expect(mail.filter(m => m.email === email)).toHaveLength(sent + 1);
+    expect((await db.user.findUniqueOrThrow({ where: { email } })).id).toBe(before.id);
+    expect((await db.account.findUniqueOrThrow({ where: { id: credential.id } })).password).toBe(credential.password);
+    expect((await db.user.findUniqueOrThrow({ where: { email } })).emailVerified).toBe(false);
+  });
   it("registers a roster student without allowing role escalation", async () => {
     const r = await authPost(
       request("/api/auth/sign-up/email", {

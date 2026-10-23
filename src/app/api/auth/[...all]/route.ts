@@ -64,18 +64,34 @@ export async function POST(request: Request) {
     }
     const forwardedHeaders = new Headers(request.headers);
     forwardedHeaders.delete("content-length");
-    const { result: response, receipt } = await trackEmailDelivery(() => getAuth().handler(
-      new Request(request.url, {
+    const { result: response, receipt } = await trackEmailDelivery(async receipt => {
+      const response = await getAuth().handler(new Request(request.url, {
         method: "POST",
         headers: forwardedHeaders,
         body: JSON.stringify(body),
-      }),
-    ));
+      }));
+      // Better Auth intentionally returns a generic success for duplicate
+      // registrations. Recover an existing unverified student by sending a new
+      // code, without changing their credentials or revealing account state.
+      if (path === "/sign-up/email" && response.ok && receipt.attempts === 0 && typeof body.email === "string") {
+        const existing = await getDb().user.findUnique({
+          where: { email: body.email },
+          select: { emailVerified: true, role: true },
+        });
+        if (existing?.role === "STUDENT" && !existing.emailVerified) {
+          // A new registration already sent its code; only retry if the auth
+          // handler made no attempt. Failed sends must remain visible errors.
+          await getAuth().api.sendVerificationOTP({
+            body: { email: body.email, type: "email-verification" },
+          });
+        }
+      }
+      return response;
+    });
     // Better Auth may catch mail-provider errors and still return signup 200.
     // Signup can safely report a failed send to the person who just created
     // the account; unknown-email OTP resends retain enumeration-safe responses.
-    if (path === "/sign-up/email" && response.ok &&
-        (receipt.accepted === 0 || receipt.failed > 0)) {
+    if (path === "/sign-up/email" && response.ok && receipt.failed > 0) {
       return json({
         error: "Your account may have been created, but we could not send its verification code. Open Verify email and request a new code.",
       }, 503);

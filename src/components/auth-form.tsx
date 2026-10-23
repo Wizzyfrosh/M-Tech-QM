@@ -267,6 +267,7 @@ export function AuthForm({
               <Link href={`/sign-up?next=${next}`}>Create an account</Link>
             </p>
             <Link href={`/verify-email?next=${next}`}>Verify your email</Link>
+            <Link href="/activate-instructor">First instructor? Activate your account</Link>
           </>
         )}
         {mode === "sign-up" && (

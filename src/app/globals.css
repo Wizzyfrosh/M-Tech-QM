@@ -1724,3 +1724,23 @@ select:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Student assessment UI */
+.attempt-start { display: grid; justify-items: start; gap: 10px; margin: 18px 0; }
+.attempt-workspace { display: grid; gap: 20px; }
+.attempt-options { border: 0; padding: 0; margin: 22px 0 0; display: grid; gap: 10px; min-width: 0; }
+.attempt-option { display: flex; align-items: center; gap: 14px; cursor: pointer; border: 1px solid var(--border); border-radius: 13px; padding: 15px; background: #fff; }
+.attempt-option.selected { border-color: var(--purple); background: var(--soft); }
+.attempt-option input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--purple); }
+.answer-letter { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #f3f1fe; color: var(--purple-dark); font-weight: 700; flex: none; }
+.attempt-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+.attempt-actions p { color: var(--muted); margin-top: 6px; }
+.result-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 35px 20px; }
+.result-hero > svg { color: var(--purple); }
+.result-score { font-size: clamp(40px, 8vw, 68px); line-height: 1.1; }
+.results-list { display: grid; }
+.result-row { display: flex; gap: 15px; align-items: center; padding: 16px 6px; border-bottom: 1px solid var(--border); }
+.result-row > span:nth-child(2) { display: grid; flex: 1; gap: 4px; }
+.result-row small { color: var(--muted); }
+.result-row:hover { color: var(--purple); }
+@media (max-width: 700px) { .attempt-actions .button-row { display: flex; width: 100%; flex-wrap: wrap; } .attempt-actions .button-row > button { flex: 1; justify-content: center; } }

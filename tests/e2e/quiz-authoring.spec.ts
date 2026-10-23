@@ -40,6 +40,10 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await page
     .getByLabel("Description", { exact: true })
     .fill("Review the lesson before attempting this assessment.");
+  await page.getByRole("button", { name: "Add video part", exact: true }).click();
+  await page.getByLabel("Video part 1").fill("https://example.com/lesson-video-one");
+  await page.getByRole("button", { name: "Add video part", exact: true }).click();
+  await page.getByLabel("Video part 2").fill("https://example.com/lesson-video-two");
   await page.getByRole("button", { name: "Add question", exact: true }).click();
   const question = page.getByRole("group", { name: "Question 1", exact: true });
   await question
@@ -126,6 +130,8 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await expect(
     page.getByText("INSTRUCTOR PREVIEW", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole("link", {name:"Watch video part 1"})).toHaveAttribute("href","https://example.com/lesson-video-one");
+  await expect(page.getByRole("link", {name:"Watch video part 2"})).toHaveAttribute("href","https://example.com/lesson-video-two");
   await expect(
     page.getByText(
       "PRIVATE_EXPLANATION: const binds the name without allowing reassignment.",
@@ -157,6 +163,8 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   ).toBeVisible();
   await expect(page.getByLabel("Quiz title", { exact: true })).toBeDisabled();
   await student.goto(`/q/${editor.shareSlug}`);
+  await expect(student.getByRole("link", {name:"Watch part 1"})).toHaveAttribute("href","https://example.com/lesson-video-one");
+  await expect(student.getByRole("link", {name:"Watch part 2"})).toHaveAttribute("href","https://example.com/lesson-video-two");
   await expect(
     student.getByRole("heading", {
       name: "JavaScript foundations",

@@ -63,3 +63,46 @@ The current implementation provides accounts, roster management and manual quiz 
 **Limits and resilience:** A single instructor can reserve up to 10 requests per UTC day with an atomic PostgreSQL request bucket; failed requests consume that quota. Generation is limited to 20 questions/request with a 25-second provider timeout and at most one retry for transient provider responses. Invalid output is rejected: four distinct options, one key, source excerpt literally supported by the supplied notes. On errors, no quiz content changes.
 
 **Release:** Apply migration `202610230005_ai_generations` to Neon production before deploying this commit. Do not merge or enable the production endpoint until CI, migrations and Vercel quota permit a verified release. Configure the production Gemini key before real teacher acceptance tests.
+
+ 
+## Preview and student signup verification
+
+The Git branch `preview/student-onboarding-multivideo-ai` is mapped to
+`https://mtech-qms-preview.froshcodeorbit.site`, using a separate Neon database
+and Better Auth secret. It must never use production DATABASE_URL or sessions.
+The initial preview instructor is an unredeemed invitation for the approved
+instructor email. Use the preview activation page to create preview-only
+credentials; the live production account remains unchanged.
+
+For students: instructor adds an approved email to the roster, copies its
+personalized signup URL, and shares it privately with that student. Upon
+successful signup, Better Auth generates a six-digit verification code via
+Brevo, and the UI opens an email-prefilled verification form. Students
+can resend an expired/missing code. Once verified, the UI opens sign-in.
+The server no longer reports success when an email was not approved.
+
+For testable preview mail delivery, BREVO_API_KEY and MAIL_FROM_EMAIL must be
+enabled on Vercel Preview in addition to Production. The sender domain must
+be verified in Brevo. Preview uses a separate Neon database; don't transfer
+production user sessions or credentials.
+
+## Multiple lesson video links
+
+Each quiz supports up to 20 ordered HTTPS video links. The first link also
+populates the legacy lessonUrl column for compatibility. Existing quizzes
+with one video are migrated safely. The application presents the videos in
+order on preview and student quiz detail pages. External videos remain hosted
+at their original service, subject to that provider's playback restrictions.
+
+## AI providers and fallback
+
+`GEMINI_API_KEY`, `OPENROUTER_API_KEY`, and `XAI_API_KEY` are server-only
+environment variables. A selected provider uses only its corresponding key.
+Automatic mode tries configured providers in the order Gemini, OpenRouter,
+and xAI Grok if a provider returns a temporary 503/quota error.
+The optional server-only `OPENROUTER_MODEL` defaults to `openrouter/free`.
+The optional `GROK_MODEL` defaults to `grok-4.3`.
+Grok is billable and OpenRouter's free model routing may have separate
+privacy/retention rules. Avoid confidential lesson content when using them.
+Provider credentials must not be exposed through NEXT_PUBLIC variables.
+Never assume the provider key is enabled until a live draft request succeeds.

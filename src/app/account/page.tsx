@@ -1,9 +1,9 @@
 import { AppShell } from "@/components/app-shell";
 import { AccountForm } from "@/components/account-form";
-import { pageActor } from "@/lib/access";
+import { pageIdentity } from "@/lib/access";
 export const dynamic = "force-dynamic";
 export default async function Account() {
-  const actor = await pageActor();
+  const actor = await pageIdentity("/account");
   return (
     <AppShell name={actor.name} role={actor.role} active="account">
       <div className="page-heading">

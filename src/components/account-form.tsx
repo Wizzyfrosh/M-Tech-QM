@@ -106,7 +106,7 @@ export function AccountForm({
       <section className="panel">
         <h2>Password & security</h2>
         <p className="muted">
-          Use a unique password with at least 12 characters.
+          Use a unique password with at least 8 characters. Longer passwords are recommended.
         </p>
         <form className="form-stack" onSubmit={password}>
           <label>
@@ -126,7 +126,7 @@ export function AccountForm({
               name="new"
               type="password"
               autoComplete="new-password"
-              minLength={12}
+              minLength={8}
               maxLength={128}
               required
             />

@@ -76,7 +76,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
     .fill("browser@example.test");
   await student
     .getByLabel("Password", { exact: true })
-    .fill("Synthetic-student-password-123!");
+    .fill("Secur3!!");
   const verificationSentAfter = Date.now();
   await student
     .getByRole("button", { name: "Create account", exact: true })
@@ -113,7 +113,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
     .fill("browser@example.test");
   await student
     .getByLabel("Password", { exact: true })
-    .fill("Synthetic-student-password-123!");
+    .fill("Secur3!!");
   await student.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
     student.getByRole("heading", { name: "Welcome back, Browser." }),
@@ -165,7 +165,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
   await student.getByLabel("Verification code").fill(recovery);
   await student
     .getByLabel("New password", { exact: true })
-    .fill("Recovered-student-password-456!");
+    .fill("Fresh8!!");
   await student.getByRole("button", { name: "Update password" }).click();
   await expect(student.getByRole("status")).toContainText("Password updated");
   await student.getByRole("link", { name: "Back to sign in" }).click();
@@ -180,7 +180,7 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
     .fill("browser@example.test");
   await student
     .getByLabel("Password", { exact: true })
-    .fill("Recovered-student-password-456!");
+    .fill("Fresh8!!");
   await student.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
     student.getByRole("heading", { name: "Welcome back, Updated." }),

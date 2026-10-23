@@ -8,13 +8,14 @@ import { applyTestMigrations } from "../scripts/test-migrations";
 import { requestInstructorActivation, redeemInstructorActivation } from "../src/lib/instructor-activation";
 import { AccessError } from "../src/lib/access";
 import { verifyPassword } from "better-auth/crypto";
+import { redeemActivationSchema } from "../src/lib/instructor-activation-policy";
 const sent: { email: string; otp: string; type: string }[] = [];
 
 let db: PrismaClient;
 let lite: PGlite | undefined;
 let socket: PGLiteSocketServer | undefined;
 const ownerEmail = "owner.activation@example.test";
-const ownerPassword = "Synthetic-Activation-Password-123!";
+const ownerPassword = "Secure8!";
 beforeAll(async () => {
   process.env.BETTER_AUTH_SECRET = "synthetic-secret-for-one-time-instructor-tests-1234";
   let url = process.env.TEST_DATABASE_URL;
@@ -40,6 +41,12 @@ afterAll(async () => {
   await new Promise(r => setTimeout(r, 50)); await lite?.close();
 });
 describe("one-time instructor onboarding", () => {
+  it("requires 8 characters, rejects 7, and allows longer passwords", () => {
+    const body = { email: ownerEmail, code: "123456", password: ownerPassword };
+    expect(redeemActivationSchema.safeParse(body).success).toBe(true);
+    expect(redeemActivationSchema.safeParse({ ...body, password: "Seven7!" }).success).toBe(false);
+    expect(redeemActivationSchema.safeParse({ ...body, password: "ThisPasswordHasMoreThanEightChars!" }).success).toBe(true);
+  });
   it("does not send an activation code to an unapproved email or reveal eligibility", async () => {
     const unknown = await requestInstructorActivation(db, "unapproved@example.test", mail => { sent.push(mail); });
     const approved = await requestInstructorActivation(db, ownerEmail, mail => { sent.push(mail); });

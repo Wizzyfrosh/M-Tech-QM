@@ -216,12 +216,12 @@ export function AuthForm({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={mode === "sign-in" ? 1 : 12}
+                minLength={mode === "sign-in" ? 1 : 8}
                 maxLength={128}
                 placeholder={
                   mode === "sign-in"
                     ? "Enter your password"
-                    : "At least 12 characters"
+                    : "At least 8 characters"
                 }
               />
               <button

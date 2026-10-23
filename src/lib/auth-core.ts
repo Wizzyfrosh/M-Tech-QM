@@ -29,7 +29,7 @@ export function createAuth(
       enabled: true,
       requireEmailVerification: true,
       autoSignIn: false,
-      minPasswordLength: 12,
+      minPasswordLength: 8,
       maxPasswordLength: 128,
       revokeSessionsOnPasswordReset: true,
     },

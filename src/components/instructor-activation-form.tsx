@@ -64,9 +64,9 @@ export function InstructorActivationForm() {
             placeholder="000000"/>
         </label>
         <label>Create your password
-          <input type="password" autoComplete="new-password" required minLength={12} maxLength={128}
+          <input type="password" autoComplete="new-password" required minLength={8} maxLength={128}
             disabled={busy || !hydrated} value={password} onChange={e => setPassword(e.target.value)}
-            placeholder="At least 12 characters"/>
+            placeholder="At least 8 characters"/>
           <small>Use a unique password. You can change it later in Account Settings.</small>
         </label>
       </>}

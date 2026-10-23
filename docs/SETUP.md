@@ -30,7 +30,7 @@ No terminal, developer tools or direct database login is required for the instru
 
 The instructor then visits `/activate-instructor`, enters the approved email, and requests a six-digit code. The endpoint returns the same message whether or not the email is approved and schedules Brevo delivery after the HTTP response. The code is HMAC-hashed using the auth secret, expires after 10 minutes, has five guesses, and request/redeem actions use the shared database throttle.
 
-After receiving the email, the instructor enters the code and chooses a 12+ character password on the same page. A transaction locks the invite, verifies its code and expiry, creates a verified Better Auth credential account with role INSTRUCTOR, writes an audit event and marks the invite redeemed irrevocably. Database uniqueness prevents a second instructor. The instructor signs in normally and can change the password in Account Settings.
+After receiving the email, the instructor enters the code and chooses a password with at least 8 characters on the same page. A transaction locks the invite, verifies its code and expiry, creates a verified Better Auth credential account with role INSTRUCTOR, writes an audit event and marks the invite redeemed irrevocably. Database uniqueness prevents a second instructor. The instructor signs in normally and can change the password in Account Settings.
 
 For provisioning through the Neon connector, use an approved email and name, and run the one-time insert only after the migration is applied:
 

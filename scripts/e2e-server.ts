@@ -56,7 +56,7 @@ for (const fixture of [
   );
   if (fixture.role === "STUDENT")
     await pool.query(
-      'INSERT INTO "RosterEntry" (id,name,"normalizedEmail","userId","updatedAt") VALUES ($1,$2,$3,$4,NOW())',
+      'INSERT INTO "RosterEntry" (id,name,"normalizedEmail","userId",status,"updatedAt") VALUES ($1,$2,$3,$4,\'ACTIVE\',NOW())',
       [crypto.randomUUID(), fixture.name, fixture.email, id],
     );
 }

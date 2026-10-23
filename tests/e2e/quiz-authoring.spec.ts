@@ -180,7 +180,7 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await student.getByRole("button", { name: "Start or resume quiz" }).click();
   await expect(student.getByText("OFFICIAL ASSESSMENT", { exact: true })).toBeVisible();
   await expect(student.getByText(/Which keyword creates a binding/)).toBeVisible();
-  await student.getByRole("radio", { name: "" }).first().check();
+  await student.locator(".attempt-option input[type=radio]").first().check();
   await student.getByRole("button", { name: "Save progress" }).click();
   await expect(student.getByText(/Answers saved/)).toBeVisible();
   await student.reload();

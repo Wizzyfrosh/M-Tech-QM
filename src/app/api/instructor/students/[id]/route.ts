@@ -14,7 +14,10 @@ export async function PATCH(
     const db = getDb();
     const changed = await db.$transaction(async (tx) => {
       const result = await tx.rosterEntry.updateMany({
-        where: { id, revision: data.revision },
+        where: {
+          id, revision: data.revision,
+          ...(data.status === "ACTIVE" ? { user: { emailVerified: true, role: "STUDENT" as const } } : {}),
+        },
         data: { status: data.status, revision: { increment: 1 } },
       });
       if (!result.count) return false;

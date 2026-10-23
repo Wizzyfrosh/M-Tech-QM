@@ -195,6 +195,19 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     .getByRole("button", { name: "Confirm close", exact: true })
     .click();
   await expect(page.getByText("Quiz closed.", { exact: true })).toBeVisible();
+  await page.goto(`/instructor/results/${id}`);
+  await expect(page.getByRole("heading", { name: "JavaScript foundations" })).toBeVisible();
+  await expect(page.getByText("quiz-student@example.test")).toBeVisible();
+  const exportResponse = await page.request.get(`/api/instructor/results/${id}/export`);
+  expect(exportResponse.status()).toBe(200);
+  expect(exportResponse.headers()["content-type"]).toContain("text/csv");
+  expect(await exportResponse.text()).toContain("quiz-student@example.test");
+  const forbiddenExport = await context.request.get(`/api/instructor/results/${id}/export`);
+  expect(forbiddenExport.status()).toBe(403);
+  await student.goto(`/leaderboard/${editor.shareSlug}`);
+  await expect(student.getByRole("heading", { name: "Leaderboard" })).toBeVisible();
+  expect(await student.content()).not.toContain("quiz-student@example.test");
+  await page.goto(`/instructor/quizzes/${id}`);
   await page.getByRole("button", { name: "Archive quiz", exact: true }).click();
   await page
     .getByRole("button", { name: "Confirm archive", exact: true })

@@ -2,7 +2,7 @@ import "server-only";
 export type OtpMail = {
   email: string;
   otp: string;
-  type: "sign-in" | "email-verification" | "forget-password" | "change-email";
+  type: "sign-in" | "email-verification" | "forget-password" | "change-email" | "instructor-activation";
 };
 export async function sendOtpMail(message: OtpMail) {
   if (
@@ -27,7 +27,9 @@ export async function sendOtpMail(message: OtpMail) {
   const purpose =
     message.type === "forget-password"
       ? "Reset your password"
-      : "Verify your email";
+      : message.type === "instructor-activation"
+        ? "Activate your instructor account"
+        : "Verify your email";
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {

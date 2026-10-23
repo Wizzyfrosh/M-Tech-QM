@@ -285,7 +285,7 @@ export function AuthForm({
         {mode === "sign-up" && (
           <>
             <Link href={`/verify-email?email=${encodeURIComponent(email)}&next=${next}`}>
-              Already registered or didn't receive a code? Verify email or resend
+              Already registered or didn&apos;t receive a code? Verify email or resend
             </Link>
             <p>
               Already registered?{" "}

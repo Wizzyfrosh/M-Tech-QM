@@ -39,7 +39,7 @@ export function safeReturnTo(value: unknown): string {
   }
 }
 export const bulkApprovalSchema = z.object({
-  entries: z.array(z.object({ id: z.string().uuid(), revision: z.number().int().nonnegative() }).strict()).min(1).max(100),
+  ids: z.array(z.string().uuid()).min(1).max(100).refine(ids => new Set(ids).size === ids.length, "Remove duplicate students."),
 }).strict();
 export function canSignIn(user: { role: string; emailVerified: boolean; roster: { status: string } | null } | null): boolean {
   return !!user?.emailVerified && (user.role === "INSTRUCTOR" ||

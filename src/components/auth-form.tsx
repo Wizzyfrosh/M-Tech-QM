@@ -86,7 +86,12 @@ export function AuthForm({
             "The code is invalid or expired. Request a new code and try again.",
           );
         else {
-          window.location.assign(`/sign-in?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
+          // Better Auth can establish the session as part of OTP verification.
+          // Use a prefilled sign-in fallback only when no session was issued.
+          const session = await authClient.getSession();
+          window.location.assign(session.data?.session
+            ? safeReturnTo(returnTo)
+            : `/sign-in?email=${encodeURIComponent(email.trim().toLowerCase())}&next=${next}`);
           return;
         }
       } else if (mode === "forgot-password") {

@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { sendOtpMail } from "@/lib/mail";
 import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
 import { requestActivationSchema, redeemActivationSchema } from "@/lib/instructor-activation-policy";
@@ -7,7 +9,12 @@ export async function POST(request: Request) {
   try {
     assertOrigin(request);
     const { email } = await readJson(request, requestActivationSchema);
-    return json(await requestInstructorActivation(getDb(), email));
+    return json(await requestInstructorActivation(getDb(), email, message => {
+      after(async () => {
+        try { await sendOtpMail(message); }
+        catch { console.error("QMS_INSTRUCTOR_ACTIVATION_DELIVERY_FAILED"); }
+      });
+    }));
   } catch (error) { return failure(error); }
 }
 export async function PUT(request: Request) {

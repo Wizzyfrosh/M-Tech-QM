@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   BookOpen,
   ClipboardList,
+  BarChart3,
 } from "lucide-react";
 import { Brand } from "./brand";
 import { SignOut } from "./sign-out";
@@ -43,6 +44,7 @@ export function AppShell({
       icon: BookOpen,
       id: "quizzes",
     },
+    ...(role === "INSTRUCTOR" ? [{ href: "/instructor/results", label: "Results", icon: BarChart3, id: "results" }] : []),
     ...(role === "STUDENT" ? [{ href: "/student/results", label: "Results", icon: ClipboardList, id: "history" }] : []),
     { href: "/account", label: "My account", icon: UserRound, id: "account" },
   ];

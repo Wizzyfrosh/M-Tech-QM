@@ -13,6 +13,7 @@ import {
   Copy,
   LockKeyhole,
   Check,
+  BarChart3,
 } from "lucide-react";
 import { useHydrated } from "@/lib/use-hydrated";
 import {
@@ -644,6 +645,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
                 Copy quiz link
               </button>
               <p className="help-note">{formatDeadline(saved.deadline)}</p>
+              <Link className="button full" href={`/instructor/results/${saved.id}`}><BarChart3 size={16}/> View results</Link>
             </section>
           )}
           {locked && (

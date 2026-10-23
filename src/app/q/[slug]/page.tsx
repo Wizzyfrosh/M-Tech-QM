@@ -96,6 +96,7 @@ export default async function Page({
             : "Your answers are saved securely. You may resume this quiz before the deadline."}
         </p>
         {actor.role === "STUDENT" && <StartQuiz slug={slug} />}
+        {closed && quiz.leaderboardEnabled && <Link href={`/leaderboard/${slug}`} className="button">View leaderboard</Link>}
         <Link href="/student/quizzes" className="text-button">
           Back to quizzes
         </Link>

@@ -55,6 +55,10 @@ test("student self-registers and verifies; instructor approves and may later sus
     page.getByRole("heading", { name: "Students", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("heading",{name:"Student approvals"})).toBeVisible();
+  await page.setViewportSize({width:360,height:780});
+  await expect(page.locator(".approval-mobile-list")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.setViewportSize({width:1280,height:800});
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });
@@ -95,6 +99,7 @@ test("student self-registers and verifies; instructor approves and may later sus
   await expect(student.getByRole("heading",{
     name:"Waiting for instructor approval"
   })).toBeVisible();
+  expect(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect((await context.request.get("/api/quizzes")).status()).toBe(403);
   await student.goto("/student/quizzes");
   await expect(student).toHaveURL(/\/dashboard/);

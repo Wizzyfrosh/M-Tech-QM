@@ -48,5 +48,11 @@ export async function sendOtpMail(message: OtpMail) {
     }),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) throw new Error("Email delivery failed.");
+  if (!response.ok) {
+    // Only record provider HTTP status, never the recipient, OTP, API key,
+    // or untrusted response body. Keep the client error generic.
+    console.error("QMS_BREVO_SEND_REJECTED", response.status);
+    throw new Error("Verification email could not be sent.");
+  }
+  // HTTP 2xx confirms Brevo accepted the send request, not inbox delivery.
 }

@@ -18,3 +18,4 @@ CREATE TABLE "AiGeneration" (
 CREATE INDEX "AiGeneration_instructorId_createdAt_idx" ON "AiGeneration"("instructorId", "createdAt");
 CREATE INDEX "AiGeneration_quizId_createdAt_idx" ON "AiGeneration"("quizId", "createdAt");
 ALTER TABLE "AiGeneration" ADD CONSTRAINT "AiGeneration_instructorId_fkey" FOREIGN KEY ("instructorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "AiGeneration" ADD CONSTRAINT "AiGeneration_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "Quiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;

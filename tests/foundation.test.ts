@@ -16,7 +16,7 @@ let socket: PGLiteSocketServer | undefined;
 let lite: PGlite | undefined;
 const mail: OtpMail[] = [];
 const base = "http://localhost:3000";
-const password = "Synthetic-test-password-123!";
+const password = "Strong8!";
 vi.mock("@/lib/db", () => ({ getDb: () => db }));
 vi.mock("@/lib/auth", () => ({ getAuth: () => auth }));
 import { GET as meGet, PATCH as mePatch } from "../src/app/api/me/route";
@@ -342,7 +342,7 @@ describe("foundation authorization and account flow", () => {
     expect(known.status).toBe(unknown.status);
     expect(await known.json()).toEqual(await unknown.json());
     const otp = code("student@example.test", "forget-password");
-    const newPassword = "Changed-test-password-456!";
+    const newPassword = "Renewed8";
     expect(
       (
         await call("/email-otp/reset-password", {

@@ -70,14 +70,7 @@ export async function POST(request: Request) {
         body: JSON.stringify(body),
       }),
     );
-    if (path === "/sign-up/email") {
-      const result = await response
-        .clone()
-        .json()
-        .catch(() => ({}));
-      if (response.ok || result.code === "ENROLLMENT_UNAVAILABLE")
-        return json({ status: true });
-    }
+    // Preserve the actual authentication response, including validation failures.
     return response;
   } catch (error) {
     return failure(error);

@@ -85,10 +85,13 @@ describe("AI transcript question generation", () => {
     process.env.GEMINI_API_KEY = "synthetic-test-key";
     await expect(generateQuizDrafts(db, crypto.randomUUID(), quizId,
       { transcript, count: 1, difficulty: "beginner" }, fakeFetch)).rejects.toMatchObject({ status: 404 });
-    await db.quiz.update({ where: { id: quizId }, data: { status: "PUBLISHED" } });
-    await expect(generateQuizDrafts(db, instructorId, quizId,
+    const published = await db.quiz.create({ data: {
+      title: "Already published", lessonLabel: "JavaScript", createdBy: instructorId,
+    } });
+    await db.quiz.update({ where: { id: published.id }, data: { status: "PUBLISHED" } });
+    await expect(generateQuizDrafts(db, instructorId, published.id,
       { transcript, count: 1, difficulty: "beginner" }, fakeFetch)).rejects.toMatchObject({ status: 409 });
-    await db.quiz.update({ where: { id: quizId }, data: { status: "DRAFT" } });
+    // Leave the original draft untouched: published quizzes cannot be reopened.
   });
   it("records token usage but never stores transcript, and limits daily consumption", async () => {
     process.env.GEMINI_API_KEY = "synthetic-test-key";

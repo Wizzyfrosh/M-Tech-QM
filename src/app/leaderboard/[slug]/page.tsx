@@ -23,7 +23,7 @@ export default async function QuizLeaderboardPage({params}: {params: Promise<{sl
     <Link className="back-link" href={actor.role === "STUDENT" ? `/q/${slug}` : "/instructor/results"}><ArrowLeft size={16}/> Back</Link>
     <div className="page-heading"><div><span className="eyebrow">FINAL QUIZ RANKINGS</span>
       <h1>Leaderboard</h1><p>{data.quiz.title}</p></div><Trophy size={28}/></div>
-    <section className="panel"><p className="muted">Top 50 participating students. Only students who opted into rankings are displayed. Equal scores are ordered by earlier submission.</p>
+    <section className="panel"><p className="muted">Top 50 participating students. Students who opt out or have suspended access are excluded. Equal scores are ordered by earlier submission.</p>
       {data.entries.length ? <div className="results-list">{data.entries.map(row =>
         <div key={row.rank} className="result-row"><strong className="rank-number">#{row.rank}</strong>
         <span><strong>{row.name}</strong><small>{row.percent}% of maximum marks</small></span>

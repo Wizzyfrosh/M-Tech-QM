@@ -193,7 +193,7 @@ test("student self-registers and verifies; instructor approves and may later sus
     .click();
 
   expect((await suspensionResponse).status()).toBe(200);
-  await expect(page.getByRole("status")).toContainText("Student access suspended.");
+  await expect(page.getByRole("status").filter({ hasText: "Student access suspended." })).toBeVisible();
   await expect(page.locator(".approval-desktop").getByText("browser@example.test", { exact: true })).toHaveCount(0);
   expect((await context.request.get("/api/quizzes")).status()).toBe(401);
   await student.reload();

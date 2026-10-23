@@ -32,6 +32,7 @@ model User {
   roster            RosterEntry?
   auditEvents       AuditEvent[]
   quizzes           Quiz[]
+  attempts          Attempt[]
 }
 
 model Session {
@@ -153,6 +154,7 @@ model Quiz {
   createdBy          String
   creator            User       @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   questions          Question[]
+  attempts           Attempt[]
 
   @@index([status, createdAt])
   @@index([createdBy, createdAt])
@@ -169,8 +171,10 @@ model Question {
   reviewedAt  DateTime?
   options     Option[]
   answerKey   AnswerKey?
+  attemptAnswers AttemptAnswer[]
 
   @@unique([quizId, position])
+  @@unique([id, quizId])
 }
 
 model Option {
@@ -190,4 +194,41 @@ model AnswerKey {
   question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   correctOptionId String   @unique
   correctOption   Option   @relation(fields: [correctOptionId], references: [id], onDelete: Cascade)
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+}
+
+model Attempt {
+  id           String        @id @default(uuid())
+  quizId       String
+  quiz         Quiz          @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status       AttemptStatus @default(IN_PROGRESS)
+  revision     Int           @default(0)
+  startedAt    DateTime      @default(now())
+  submittedAt  DateTime?
+  earnedMarks  Int?
+  maxMarks     Int?
+  answers      AttemptAnswer[]
+
+  @@unique([quizId, userId])
+  @@unique([id, quizId])
+  @@index([quizId, status])
+  @@index([userId, submittedAt])
+}
+
+model AttemptAnswer {
+  attemptId        String
+  attempt          Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  quizId           String
+  questionId       String
+  question         Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  selectedOptionId String?
+  awardedMarks    Int?
+
+  @@id([attemptId, questionId])
 }

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { AiQuizPanel } from "@/components/ai-quiz-panel";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -520,6 +521,12 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
               </button>
             )}
           </section>
+          {!locked && <AiQuizPanel
+            quizId={saved.id}
+            availableSlots={50 - draft.questions.length}
+            disabled={disabled || busy}
+            onAdd={questions => change("questions", [...draft.questions, ...questions])}
+          />}
         </div>
         <aside className="editor-side">
           <section className="panel">

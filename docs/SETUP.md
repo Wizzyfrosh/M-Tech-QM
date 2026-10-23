@@ -51,3 +51,15 @@ Codes expire after 10 minutes, have a limited number of guesses and are stored h
 ## Current release boundary
 
 The current implementation provides accounts, roster management and manual quiz authoring/publication. Shared student links expose published metadata only; attempts, grading, results, rankings and AI drafting are not available yet. The dedicated Neon production database has been created and migrated. Vercel hosting is live; Brevo delivery and instructor activation are still pending; see [deployment status](DEPLOYMENT.md). Before live access, configure isolated staging/production databases and email, exercise real delivery, review backups/retention, and verify the deployed account flows. Later milestones implement assessment behavior and AI drafts.
+
+## Milestone 5 — AI transcript drafts (Gemini)
+
+**Scope:** Instructor-only, editable multiple-choice draft suggestions. AI never publishes a quiz or marks a generated question reviewed. Start with a DRAFT quiz, paste 160–40,000 characters of non-sensitive lesson notes, choose 1–20 questions (maximum 50 in the quiz) and a difficulty. After validating the provider's structured JSON response, review suggested answers and supporting verbatim source excerpts, add selected questions and review each in the ordinary quiz editor. Save the draft manually.
+
+**Provider setup:** Create a Gemini API key in Google AI Studio and configure it **only** as `GEMINI_API_KEY` in Vercel's Production environment. Do not add an API key to repository files, NEXT_PUBLIC variables, client code, chat messages or browser storage. Use `gemini-2.5-flash-lite`. Pricing and free-tier eligibility depend on your Google account and should be confirmed with the provider. Missing credentials return a clear 503 and do not disable manual quizzes.
+
+**Privacy:** Transcript input is passed from the instructor's browser to the server and then Google Gemini. It is not stored in Neon, analytics or application logs. The server persists only the instructor/quiz linkage, generation status and optional token counts. Do not paste student names, contact details, passwords, proprietary code or confidential content.
+
+**Limits and resilience:** A single instructor can reserve up to 10 requests per UTC day with an atomic PostgreSQL request bucket; failed requests consume that quota. Generation is limited to 20 questions/request with a 25-second provider timeout and at most one retry for transient provider responses. Invalid output is rejected: four distinct options, one key, source excerpt literally supported by the supplied notes. On errors, no quiz content changes.
+
+**Release:** Apply migration `202610230005_ai_generations` to Neon production before deploying this commit. Do not merge or enable the production endpoint until CI, migrations and Vercel quota permit a verified release. Configure the production Gemini key before real teacher acceptance tests.

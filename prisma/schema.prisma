@@ -33,6 +33,7 @@ model User {
   auditEvents       AuditEvent[]
   quizzes           Quiz[]
   attempts          Attempt[]
+  aiGenerations     AiGeneration[]
 }
 
 model Session {
@@ -155,6 +156,7 @@ model Quiz {
   creator            User       @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   questions          Question[]
   attempts           Attempt[]
+  aiGenerations      AiGeneration[]
 
   @@index([status, createdAt])
   @@index([createdBy, createdAt])
@@ -244,4 +246,22 @@ model InstructorInvitation {
   redeemedAt     DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model AiGeneration {
+  id            String   @id @default(uuid())
+  instructorId  String
+  instructor    User     @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  model         String
+  status        String   @default("STARTED")
+  count         Int
+  inputTokens   Int?
+  outputTokens  Int?
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+
+  @@index([instructorId, createdAt])
+  @@index([quizId, createdAt])
 }

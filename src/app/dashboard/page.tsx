@@ -12,6 +12,7 @@ import { Brand } from "@/components/brand";
 import { SignOut } from "@/components/sign-out";
 import { pageIdentity } from "@/lib/access";
 import { getDb } from "@/lib/db";
+import { ThemeToggle } from "@/components/theme-toggle";
 export const dynamic = "force-dynamic";
 export default async function Dashboard() {
   const actor = await pageIdentity();
@@ -19,7 +20,7 @@ export default async function Dashboard() {
   if (!instructor && actor.roster?.status === "PENDING") {
     return <main className="standalone" id="main">
       <div className="pending-panel">
-        <Brand />
+        <div className="pending-header"><Brand /><ThemeToggle /></div>
         <span className="empty-icon"><Clock3 size={28}/></span>
         <span className="eyebrow">EMAIL VERIFIED</span>
         <h1>Waiting for instructor approval</h1>

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectAligned } from "./layout-checks";
 test.use({ actionTimeout: 15000 });
 test("instructor saves, previews, publishes and archives a quiz without leaking its answer key", async ({
   page,
@@ -30,6 +31,7 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     page.getByRole("heading", { name: "Untitled quiz", exact: true }),
   ).toBeVisible();
   const editorUrl = page.url();
+  await page.locator(".topbar").getByRole("button", { name: "Switch to dark mode" }).click();
   const id = editorUrl.split("/").at(-1)!;
   await page
     .getByLabel("Quiz title", { exact: true })
@@ -82,6 +84,11 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     .check();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByText("Draft saved.", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectAligned(page);
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(

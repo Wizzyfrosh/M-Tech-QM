@@ -1,5 +1,6 @@
 import { Brand } from "@/components/brand";
 import { Check, Code2, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 export default function AuthLayout({
   children,
 }: {
@@ -51,6 +52,7 @@ export default function AuthLayout({
         <p className="aside-foot">Built for the M Tech learning community.</p>
       </aside>
       <main id="main" className="auth-main">
+        <div className="auth-controls"><ThemeToggle /></div>
         {children}
         <p className="auth-foot">
           A private learning space. Access is managed by your instructor.

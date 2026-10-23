@@ -11,7 +11,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script id="qms-theme" dangerouslySetInnerHTML={{ __html:
+          `try{document.documentElement.dataset.theme=localStorage.getItem('qms-theme-v1')==='dark'?'dark':'light'}catch{document.documentElement.dataset.theme='light'}`
+        }}/>
+      </head>
       <body>
         <a className="skip-link" href="#main">
           Skip to content

@@ -33,11 +33,11 @@ beforeAll(async () => {
     if (!["127.0.0.1", "localhost"].includes(parsed.hostname) || !parsed.pathname.endsWith("_test"))
       throw new Error("Tests require an isolated local _test database.");
   }
-  const pool = new Pool({ connectionString: url, max: 1 });
+  const pool = new Pool({ connectionString: url, max: lite ? 1 : 5 });
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await applyTestMigrations(pool);
-  await pool.end();
-  db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: lite ? 1 : 5 }) });
+  // Keep the migrated connection: closing/reopening it races PGlite socket cleanup.
+  db = new PrismaClient({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
   for (const role of ["INSTRUCTOR", "STUDENT", "STUDENT"] as const) {
     const id = crypto.randomUUID();
     const email = `assessment-${id}@example.test`;
@@ -117,3 +117,48 @@ describe("official assessment lifecycle", () => {
     expect(disclosed.questions?.[0].correctOptionId).toBe(firstOption);
   });
 });
+
+// Real PostgreSQL only: PGlite's single connection cannot measure row-lock contention.
+it.skipIf(!process.env.TEST_DATABASE_URL)("runs a 25-student concurrency pilot within a 100-student synthetic roster", async () => {
+  const users = Array.from({ length: 100 }, (_, index) => ({
+    id: crypto.randomUUID(), name: `Pilot student ${index}`, email: `pilot-${index}@example.test`,
+    role: "STUDENT" as const, emailVerified: true,
+  }));
+  await db.user.createMany({ data: users });
+  await db.rosterEntry.createMany({ data: users.map(user => ({
+    normalizedEmail: user.email, name: user.name, userId: user.id, status: "ACTIVE" as const,
+  })) });
+  const quiz = await createQuiz(db, owner, { ...blankQuiz(), title: "Synthetic concurrency pilot", lessonLabel: "Reliability",
+    questions: [{ prompt: "Which is two plus two?", explanation: "Two plus two is four.", marks: 3,
+      reviewed: true, correctIndex: 0, options: ["4", "3", "2", "1"] }] });
+  await actOnQuiz(db, owner, quiz.id, 0, "publish");
+  const editor = await getQuizEditor(db, quiz.id, owner);
+  const question = await db.question.findFirstOrThrow({ where: { quizId: quiz.id }, include: { options: true } });
+  const selection = [{ questionId: question.id, selectedOptionId: question.options.find(option => option.text === "4")!.id }];
+  const timings: Record<string, number[]> = { start: [], save: [], submit: [] };
+  async function measure<T>(operation: string, work: () => Promise<T>): Promise<T> {
+    const start = performance.now(); const result = await work();
+    timings[operation].push(performance.now() - start); return result;
+  }
+  const active = users.slice(0, 25);
+  const attempts = await Promise.all(active.map(user => measure("start", () => startAttempt(db, user.id, "STUDENT", editor.shareSlug))));
+  const saved = await Promise.all(attempts.map((attempt, index) => measure("save", () => saveAnswers(db, attempt.id, active[index].id, "STUDENT", 0, selection))));
+  const acknowledged = await db.attemptAnswer.findMany({ where: { attemptId: { in: attempts.map(attempt => attempt.id) } } });
+  expect(acknowledged).toHaveLength(25);
+  expect(acknowledged.every(answer => answer.selectedOptionId === selection[0].selectedOptionId)).toBe(true);
+  const stale = await Promise.allSettled(attempts.map((attempt, index) => saveAnswers(db, attempt.id, active[index].id, "STUDENT", 0, [])));
+  expect(stale.every(result => result.status === "rejected" && result.reason.status === 409)).toBe(true);
+  // Simulate double taps / a replay after a lost submission response.
+  const results = await Promise.all(attempts.flatMap((attempt, index) => [0, 1].map(() => measure("submit", () =>
+    submitAttempt(db, attempt.id, active[index].id, "STUDENT", saved[index].revision, selection)))));
+  expect(results).toHaveLength(50);
+  expect(results.every(result => result.status === "SUBMITTED" && result.earnedMarks === 3 && result.maxMarks === 3)).toBe(true);
+  expect(await db.attempt.count({ where: { quizId: quiz.id, status: "SUBMITTED" } })).toBe(25);
+  expect(await db.attemptAnswer.count({ where: { quizId: quiz.id, awardedMarks: 3 } })).toBe(25);
+  const summary = Object.fromEntries(Object.entries(timings).map(([operation, values]) => {
+    const ordered = values.toSorted((a, b) => a - b);
+    return [operation, { requests: values.length, p50Ms: Math.round(ordered[Math.ceil(values.length * 0.5) - 1]),
+      p95Ms: Math.round(ordered[Math.ceil(values.length * 0.95) - 1]), maxMs: Math.round(ordered.at(-1)!) }];
+  }));
+  console.info("QMS_SYNTHETIC_DATABASE_PILOT", JSON.stringify({ roster: 100, active: 25, duplicateResults: 0, lostAcknowledgedAnswers: 0, operations: summary }));
+}, 60000);

@@ -1,6 +1,6 @@
 # Architecture, data model and API contract
 
-Planning baseline v0.1. This is an implementation design, not a deployed system.
+Implementation architecture. Core services are implemented; deployment evidence and remaining operational gates are recorded separately in DEPLOYMENT.md and VALIDATION.md.
 
 ## Architecture decision
 
@@ -36,6 +36,12 @@ Indexes: quiz status/deadline; attempt quizId/status and userId/submittedAt; ros
 ### Start
 
 Check session, verified email, active linked roster entry, and effective publication/closure. Insert one Attempt with database uniqueness on quizId/userId. A conflict returns the existing attempt. Reopening a submitted attempt returns its result, not a new attempt.
+
+### Browser save coordination
+
+Answer changes debounce for 800ms. Only one save runs at a time; edits made during that request remain dirty and are sent with its acknowledged revision. Submission waits for the active save and then sends the latest answer snapshot. A failed submission response never produces a local score or triggers background submission.
+
+Transient save failures have three automatic retries, plus reconnect/manual retry. After an ambiguous save failure, GET compares the committed revision and the exact attempted snapshot. Only an identical snapshot at the immediately following revision acknowledges that save; a different revision blocks writes and requires an explicit reload. The browser never adopts an arbitrary newer revision to overwrite another tab. Unsaved choices stay in memory, with a page-close warning; there is no offline durability promise.
 
 ### Save
 

@@ -28,11 +28,11 @@ beforeAll(async () => {
     if (!["localhost", "127.0.0.1"].includes(parsed.hostname) || !parsed.pathname.endsWith("_test"))
       throw new Error("Use only an isolated local _test database.");
   }
-  const pool = new Pool({ connectionString: url, max: 1 });
+  const pool = new Pool({ connectionString: url, max: lite ? 1 : 5 });
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await applyTestMigrations(pool);
-  await pool.end();
-  db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: lite ? 1 : 5 }) });
+  // Keep the migrated connection: closing/reopening it races PGlite socket cleanup.
+  db = new PrismaClient({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
   for (const name of ["INSTRUCTOR", "STUDENT", "STUDENT"] as const) {
     const id = crypto.randomUUID(), email = `report-${id}@example.test`;
     await db.user.create({ data: { id, name: name === "INSTRUCTOR" ? "Instructor" :

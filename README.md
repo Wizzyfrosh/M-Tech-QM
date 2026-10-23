@@ -4,7 +4,9 @@ A mobile-friendly quiz workspace for one programming instructor and a private st
 
 ## Implementation status
 
-Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Milestone 2 adds manual multiple-choice quiz authoring, reviewed-answer validation, instructor preview, publication, shared details links, duplication, closure and archiving. Published questions and answer keys are locked. Student attempts, grading, reports, leaderboard rankings and AI drafting remain upcoming milestones. Both implementation milestones are merged into main. The dedicated Neon production database has both migrations applied. The canonical app URL is [mtech-qms.froshcodeorbit.site](https://mtech-qms.froshcodeorbit.site). The former `qms.froshcodeorbit.site` hostname redirects to the canonical domain. Live Brevo delivery and instructor activation remain pending; see [deployment status](docs/DEPLOYMENT.md).
+Milestones 1–5 are implemented: self-service student signup with email-code verification and instructor approval, account recovery, roster access controls, manual quiz authoring, official attempts and transactional grading, result histories, instructor reports/CSV, closed-quiz rankings and reviewed AI drafts. Dark mode is optional, light mode is the default, and the theme preference is saved on the device. Password settings expand only when selected.
+
+Milestone 6 (pilot and launch readiness) is in progress. This release adds debounced answer autosave, bounded connection retries, lost-response reconciliation and serialization with final submission. Production capacity and disaster-recovery readiness are separate checks; see [validation](docs/VALIDATION.md) and [deployment status](docs/DEPLOYMENT.md).
 
 ## Stack
 
@@ -20,9 +22,9 @@ Next.js 16, React 19, TypeScript, Tailwind CSS 4, PostgreSQL, Prisma 7 and Bette
 6. Run `npm run db:migrate` to apply the committed migrations to the development database.
 7. Prepare the single instructor account: `npm run instructor:setup -- --email owner@example.com --name "Instructor name"`.
 8. Run `npm run dev`, open `/forgot-password`, request a code for that instructor email and use it on `/reset-password` to choose a password. The code proves email ownership and verifies the account. Then sign in.
-9. Open **Students**, add a student's name/email, and share the application link. The student registers, verifies their email code and signs in. Adding a student does not send an invitation.
+9. Share the application link. Students register and verify their email themselves, then see a waiting-for-approval screen. Open **Students** as the instructor to approve them. Approval grants quiz access; suspension removes access while preserving records. Manual roster entry remains available when needed.
 
-After signing in as the instructor, open **Quizzes**, create a draft, add four-option questions and review each correct answer and explanation. Save and preview before publishing. Published links currently show quiz details; students cannot submit attempts yet. Deadlines use West Africa Time (UTC+1).
+After signing in as the instructor, open **Quizzes**, create a draft, add four-option questions and review each correct answer and explanation. Save and preview before publishing. Approved students can start/resume an official attempt and submit once. Answers save automatically after a short pause, with an explicit Save progress fallback. Wait for the saved acknowledgement before leaving; unsaved choices are held in page memory only. Final submission requires server confirmation. Deadlines use West Africa Time (UTC+1).
 
 The instructor setup command generates an undisclosed random initial password and refuses to create a second instructor. There is no public role-selection or instructor-creation endpoint.
 

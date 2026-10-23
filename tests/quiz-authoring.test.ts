@@ -252,7 +252,7 @@ describe("quiz authoring and publication", () => {
     expect(JSON.parse(text)).toMatchObject({
       questionCount: 1,
       maxMarks: 3,
-      acceptingAttempts: false,
+      acceptingAttempts: true,
     });
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });

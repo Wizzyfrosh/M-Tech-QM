@@ -156,6 +156,7 @@ model Quiz {
   creator            User       @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   questions          Question[]
   attempts           Attempt[]
+  aiGenerations      AiGeneration[]
 
   @@index([status, createdAt])
   @@index([createdBy, createdAt])
@@ -252,6 +253,7 @@ model AiGeneration {
   instructorId  String
   instructor    User     @relation(fields: [instructorId], references: [id], onDelete: Restrict)
   quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
   model         String
   status        String   @default("STARTED")
   count         Int

@@ -168,7 +168,11 @@ test("instructor adds a student; student verifies, signs in, recovers and loses 
     student.getByRole("heading", { name: "Welcome back, Updated." }),
   ).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Suspend", exact: true }).click();
+  await page
+    .getByRole("row")
+    .filter({ hasText: "browser@example.test" })
+    .getByRole("button", { name: "Suspend", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Suspend access", exact: true })
     .click();

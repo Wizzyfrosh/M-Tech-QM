@@ -1,8 +1,9 @@
+import { applyTestMigrations } from "./test-migrations";
 // Disposable local test harness. Never run against production data.
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { Pool } from "pg";
-import { readFile, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { hashPassword } from "better-auth/crypto";
 let lite: PGlite | undefined;
@@ -23,22 +24,42 @@ if (url) {
 }
 const pool = new Pool({ connectionString: url, max: 1 });
 await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
-await pool.query(
-  await readFile(
-    "prisma/migrations/202610230001_foundation/migration.sql",
-    "utf8",
-  ),
-);
-const id = crypto.randomUUID();
-const password = await hashPassword("Synthetic-instructor-password-123!");
-await pool.query(
-  'INSERT INTO "User" (id,name,email,"emailVerified",role,"updatedAt") VALUES ($1,$2,$3,true,$4,NOW())',
-  [id, "Test Instructor", "instructor@example.test", "INSTRUCTOR"],
-);
-await pool.query(
-  'INSERT INTO "Account" (id,"accountId","providerId","userId",password,"updatedAt") VALUES ($1,$2,$3,$4,$5,NOW())',
-  [crypto.randomUUID(), id, "credential", id, password],
-);
+await applyTestMigrations(pool);
+for (const fixture of [
+  {
+    name: "Test Instructor",
+    email: "instructor@example.test",
+    role: "INSTRUCTOR",
+    password: "Synthetic-instructor-password-123!",
+  },
+  {
+    name: "Quiz Student",
+    email: "quiz-student@example.test",
+    role: "STUDENT",
+    password: "Synthetic-quiz-student-password-123!",
+  },
+]) {
+  const id = crypto.randomUUID();
+  await pool.query(
+    'INSERT INTO "User" (id,name,email,"emailVerified",role,"updatedAt") VALUES ($1,$2,$3,true,$4,NOW())',
+    [id, fixture.name, fixture.email, fixture.role],
+  );
+  await pool.query(
+    'INSERT INTO "Account" (id,"accountId","providerId","userId",password,"updatedAt") VALUES ($1,$2,$3,$4,$5,NOW())',
+    [
+      crypto.randomUUID(),
+      id,
+      "credential",
+      id,
+      await hashPassword(fixture.password),
+    ],
+  );
+  if (fixture.role === "STUDENT")
+    await pool.query(
+      'INSERT INTO "RosterEntry" (id,name,"normalizedEmail","userId","updatedAt") VALUES ($1,$2,$3,$4,NOW())',
+      [crypto.randomUUID(), fixture.name, fixture.email, id],
+    );
+}
 await pool.end();
 await rm(".local-mail", { recursive: true, force: true });
 const child = spawn(

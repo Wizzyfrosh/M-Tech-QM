@@ -18,9 +18,9 @@ No credentials are needed to compile the application. Accessing protected pages 
 
 ## Database and migrations
 
-Run `npm run db:migrate` against the intended development database after reviewing its connection. The committed migration creates auth, roster, audit and rate-limiting tables, database uniqueness and a partial index allowing only one instructor. `npm run db:dev` is reserved for developing new migrations against disposable development data. Do not run it against production.
+Run `npm run db:migrate` against the intended development database after reviewing its connection. The committed migrations create auth, roster, audit, rate-limiting and quiz tables, database uniqueness and a partial index allowing only one instructor. The quiz migration adds questions, options and separately stored answer keys, option-membership constraints and triggers protecting published content. `npm run db:dev` is reserved for developing new migrations against disposable development data. Do not run it against production.
 
-The auth user table stores the display name, role and ranking preference directly. This replaces the separate Profile entity proposed in the logical planning model; it avoids duplicated identity fields while preserving the same access rules. Quiz tables will be added with their implementation milestone.
+The auth user table stores the display name, role and ranking preference directly. This replaces the separate Profile entity proposed in the logical planning model; it avoids duplicated identity fields while preserving the same access rules. Quiz draft updates and lifecycle changes use row locks and optimistic revisions to prevent stale tabs from overwriting newer work.
 
 ## Instructor activation
 
@@ -36,4 +36,4 @@ Codes expire after 10 minutes, have a limited number of guesses and are stored h
 
 ## Current release boundary
 
-This milestone provides account and roster management only. No production service has been created, migrated or deployed by this change. Before live access, configure isolated staging/production databases and email, exercise real delivery, review backups/retention, and verify the deployed account flows. Later milestones implement quiz authoring and assessment behavior.
+The current implementation provides accounts, roster management and manual quiz authoring/publication. Shared student links expose published metadata only; attempts, grading, results, rankings and AI drafting are not available yet. No production service has been created, migrated or deployed by this change. Before live access, configure isolated staging/production databases and email, exercise real delivery, review backups/retention, and verify the deployed account flows. Later milestones implement assessment behavior and AI drafts.

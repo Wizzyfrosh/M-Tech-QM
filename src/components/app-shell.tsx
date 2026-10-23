@@ -36,6 +36,12 @@ export function AppShell({
           },
         ]
       : []),
+    {
+      href: role === "INSTRUCTOR" ? "/instructor/quizzes" : "/student/quizzes",
+      label: "Quizzes",
+      icon: BookOpen,
+      id: "quizzes",
+    },
     { href: "/account", label: "My account", icon: UserRound, id: "account" },
   ];
   return (

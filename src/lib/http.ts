@@ -15,6 +15,7 @@ export function assertOrigin(request: Request) {
 export async function readJson<T>(
   request: Request,
   schema: z.ZodType<T>,
+  maxBytes = 16_384,
 ): Promise<T> {
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     throw new AccessError(415, "Send JSON data.");
@@ -27,7 +28,7 @@ export async function readJson<T>(
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > 16_384) {
+    if (size > maxBytes) {
       await reader.cancel();
       throw new AccessError(413, "Request is too large.");
     }

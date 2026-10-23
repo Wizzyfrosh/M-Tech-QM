@@ -31,6 +31,7 @@ model User {
   accounts          Account[]
   roster            RosterEntry?
   auditEvents       AuditEvent[]
+  quizzes           Quiz[]
 }
 
 model Session {
@@ -116,4 +117,77 @@ model RequestBucket {
   expiresAt DateTime
 
   @@index([expiresAt])
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+enum ReviewMode {
+  AFTER_SUBMISSION
+  AFTER_CLOSE
+  INSTRUCTOR_RELEASE
+}
+
+model Quiz {
+  id                 String     @id @default(uuid())
+  shareSlug          String     @unique @default(uuid())
+  title              String
+  lessonLabel        String     @default("")
+  description        String     @default("")
+  lessonUrl          String?
+  deadline           DateTime?
+  status             QuizStatus @default(DRAFT)
+  revision           Int        @default(0)
+  reviewMode         ReviewMode @default(AFTER_CLOSE)
+  leaderboardEnabled Boolean    @default(true)
+  reviewReleasedAt   DateTime?
+  publishedAt        DateTime?
+  closedAt           DateTime?
+  archivedAt         DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  createdBy          String
+  creator            User       @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  questions          Question[]
+
+  @@index([status, createdAt])
+  @@index([createdBy, createdAt])
+}
+
+model Question {
+  id          String     @id @default(uuid())
+  quizId      String
+  quiz        Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  prompt      String     @default("")
+  explanation String     @default("")
+  marks       Int        @default(1)
+  position    Int
+  reviewedAt  DateTime?
+  options     Option[]
+  answerKey   AnswerKey?
+
+  @@unique([quizId, position])
+}
+
+model Option {
+  id         String     @id @default(uuid())
+  questionId String
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String     @default("")
+  position   Int
+  correctFor AnswerKey?
+
+  @@unique([questionId, position])
+  @@unique([questionId, id])
+}
+
+model AnswerKey {
+  questionId      String   @id
+  question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  correctOptionId String   @unique
+  correctOption   Option   @relation(fields: [correctOptionId], references: [id], onDelete: Cascade)
 }

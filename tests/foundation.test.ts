@@ -196,6 +196,22 @@ describe("foundation authorization and account flow", () => {
     expect(await repeat.json()).toEqual({approved:0,skipped:1});
     expect(await db.auditEvent.count({where:{action:"STUDENT_APPROVED"}})).toBe(1);
   });
+  it("does not report a sent signup OTP if the mail provider rejects it", async () => {
+    const broken = createAuth(db, {
+      url: base,
+      secret: process.env.BETTER_AUTH_SECRET!,
+      sendMail: async () => { throw new Error("Synthetic Brevo rejection"); },
+    });
+    const response = await broken.handler(request("/api/auth/sign-up/email", {
+      name: "Mail Failure Test", email: "mail-failure@example.test", password,
+    }));
+    expect(response.ok).toBe(false);
+    const record = await db.user.findUnique({
+      where: { email: "mail-failure@example.test" }, include: { roster: true },
+    });
+    // A partially created account can recover by resending from Verify email.
+    if (record) expect(record.roster?.status).toBe("PENDING");
+  });
   it("registers a roster student without allowing role escalation", async () => {
     const r = await authPost(
       request("/api/auth/sign-up/email", {

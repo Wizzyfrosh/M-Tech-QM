@@ -21,9 +21,21 @@ Local integration tests use PGlite with the PostgreSQL wire adapter when TEST_DA
 - Row locking and revision checks protect concurrent saves and publishing. Published question/option/key mutations and deletion are blocked by database triggers.
 - Correct options must belong to the same question. Invalid draft input rolls back atomically.
 - Published deadlines can only be extended before closure. Closed quizzes cannot reopen; leaderboard visibility can still change. Archiving preserves content.
-- Shared landing-page/API data contains metadata only. No question prompts, explanations or correct-option fields are returned to students in this milestone.
+- Shared landing-page/API data contains metadata only. Before starting an attempt, no question prompts, explanations or correct-option fields are returned. Attempts expose questions/options but hide answer keys until the configured review release.
 - Browser coverage includes save, review invalidation, mobile editor overflow, instructor preview/key toggle, publish, student metadata privacy, close, archive, duplicate and draft deletion.
 
-## Limits
+## Assessment reliability coverage
 
-A build/type/lint pass does not establish deployed database or email readiness. Real Brevo delivery, production origin/cookie configuration, migration rehearsal, backup/restore and deployment smoke checks must pass before live assessments. Student attempts, grading, result histories, leaderboard rankings, reports and AI have not yet been implemented. Publishing makes the details link available; it does not enable submissions. Local checks cover 42 unit/integration tests plus three browser tests, type checking, linting and a production build. CI results are tracked on the pull request rather than asserted in this document before a run completes.
+- Debounced saves acknowledge only committed snapshots; edits made during a save remain pending.
+- Final submission waits for the current save revision; repeated clicks produce one request.
+- Lost save acknowledgements are reconciled against the exact server snapshot, without overwriting changes from another tab.
+- Three bounded automatic retries preserve unsaved choices; reconnect and manual save can retry again. Conflicts and access/closure failures stop automatic writes.
+- Unconfirmed submission freezes choices and offers an explicit retry; no score is fabricated and no autosave follows an ambiguous submit.
+- Browser coverage interrupts a save, restores connectivity, drops a response after commit, reloads saved answers and completes submission/results/export.
+- A real-PostgreSQL-only integration pilot creates a synthetic 100-student cohort and runs 25 concurrent starts/saves plus 50 duplicate submissions. It asserts one result per student, matching grades, rejection of stale saves and no loss of acknowledged answers. It logs sanitized service latency metrics in CI. PGlite runs skip this check because its single connection cannot represent lock contention.
+
+## Current limits
+
+Local integration checks use disposable PGlite; GitHub Actions uses PostgreSQL 16. The database pilot does not include HTTP, authentication, hosting cold starts or production network latency. A separate staging HTTP load measurement remains required before claiming capacity.
+
+Backup/restore rehearsal, a chosen retention policy, service budget review and support procedures remain launch gates. No production load test is authorized or performed by these checks. Browser mail uses a local file transport. Production Brevo delivery was checked separately and the owner confirmed signup verification works; mailbox placement remains outside the browser harness.

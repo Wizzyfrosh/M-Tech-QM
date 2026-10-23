@@ -102,12 +102,12 @@ beforeAll(async () => {
     )
       throw new Error("Use a dedicated local _test database.");
   }
-  const pool = new Pool({ connectionString: url, max: 1 });
+  const pool = new Pool({ connectionString: url, max: lite ? 1 : 5 });
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await applyTestMigrations(pool);
-  await pool.end();
+  // Keep the migrated connection: closing/reopening it races PGlite socket cleanup.
   db = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: url, max: lite ? 1 : 5 }),
+    adapter: new PrismaPg(pool, { disposeExternalPool: true }),
   });
   auth = createAuth(db, {
     url: base,

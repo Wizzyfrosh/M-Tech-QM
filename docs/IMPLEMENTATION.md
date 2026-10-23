@@ -1,16 +1,16 @@
 # Implementation plan and acceptance checks
 
-Execute milestones in order. Ship the manual end-to-end workflow before adding AI. This is a sequence of deliverables, not a promised delivery date.
+Status: milestones 1–5 are implemented. Milestone 6 is in progress; operational readiness is not implied by deployed features. This is a sequence of deliverables, not a promised delivery date.
 
 ## Milestone 1 — Foundation, accounts and roster
 
 Scaffold the TypeScript application and light responsive shell; pin compatible dependencies and runtime; configure database migrations, auth, verification/recovery email and controlled instructor provisioning. Implement active roster enforcement and safe session handling.
 
-Acceptance: an allowed email can verify and sign in; an unlisted email cannot enroll; students cannot assign roles; a suspended student loses domain access even with an existing session; recovery tokens expire and repeated requests are throttled. CI performs type checking, linting and a production build with documented test-safe configuration. No production secrets are needed for pull-request checks.
+Acceptance: students can register and verify themselves, but remain pending until instructor approval; students cannot assign roles; a suspended student loses domain access even with an existing session; recovery tokens expire and repeated requests are throttled. CI performs type checking, linting and a production build with documented test-safe configuration. No production secrets are needed for pull-request checks.
 
 ## Milestone 2 — Manual quiz creation and publishing
 
-Implemented in the quiz-authoring branch. This change is stacked on the accounts/roster foundation pull request. Student links intentionally stop at published metadata until Milestone 3 adds official attempts.
+Implemented and merged. Student links support official attempts and results from milestones 3–4.
 
 Build quiz list/editor, four-option multiple-choice questions, marks, preview, optional lesson link, deadline and review settings. Add draft delete, duplicate, close and archive. Enforce lifecycle and reviewed-answer validation on the server.
 
@@ -35,6 +35,10 @@ Choose and configure one provider, then implement transcript input, count/diffic
 Acceptance: invalid/malformed output is rejected; a transcript containing malicious instructions cannot trigger tool use or publication; insufficient material produces an actionable message; all generated questions begin unreviewed; outages leave manual editing usable; concurrent requests cannot bypass the quota; no transcript or provider key reaches logs/client bundles.
 
 ## Milestone 6 — Pilot and launch readiness
+
+Current work: debounced autosave, connection recovery, revision-conflict handling and safe save/submit ordering. Browser verification interrupts saves and drops an acknowledgement after the server commits. A PostgreSQL-only integration pilot exercises 25 concurrent synthetic students from a 100-member test roster, including stale saves and duplicate submissions. This is a database/service test, not a deployed HTTP capacity benchmark.
+
+Remaining operational gates: staging HTTP load measurements, backup/restore rehearsal, retention-policy selection and support procedures. Never treat CI latency as a production capacity claim.
 
 Test a real browser flow from instructor publishing through student result and instructor CSV. Exercise account recovery and a staged backup/restore. Perform targeted accessibility and mobile checks. Run a measured concurrency pilot with 25 synthetic active students against a 100-member roster; record response times, errors and grading consistency. Use separate test data and never load-test production without explicit authorization.
 

@@ -19,7 +19,7 @@ The application has two roles: INSTRUCTOR and STUDENT. Student signup never gran
 | Capability | MVP behavior |
 | --- | --- |
 | Accounts | Email/password authentication, email ownership verification, account recovery, profile display name |
-| Student roster | Instructor adds an allowed email and name, sees activation status, suspends or restores access |
+| Student roster | Student self-registration followed by instructor approval; instructor sees pending students and suspends/restores access |
 | Quiz editor | Create, edit drafts, preview, duplicate, publish, manually close and archive |
 | Questions | Single-answer multiple-choice; four options, one correct option, explanation and integer marks |
 | AI drafting | Paste transcript, choose question count and difficulty, generate editable multiple-choice drafts |
@@ -38,11 +38,11 @@ Multiple instructors and organizations; payments; video uploads; theory answers 
 
 ### Instructor
 
-Sign in → add student emails → create quiz → add or generate questions → review answer key → set deadline, review visibility and leaderboard → preview → publish → copy link → review submissions and question breakdown → export results.
+Sign in → approve verified student registrations → create quiz → add or generate questions → review answer key → set deadline, review visibility and leaderboard → preview → publish → copy link → review submissions and question breakdown → export results.
 
 ### Student onboarding
 
-Instructor adds email → instructor shares the app/quiz link through their existing channel → student registers using that email → verifies email ownership → signs in → completes profile → opens quiz. Registration is rejected for emails outside the active roster. Adding a roster email does not create a password or send an invitation automatically.
+Student registers → verifies email ownership → signs in → waits for instructor approval → instructor approves → student opens quizzes. Signup never grants access to assessments by itself. Instructor approval and active roster membership are enforced on the server. Manual roster additions remain optional.
 
 ### Student assessment
 
@@ -143,7 +143,7 @@ Use a clean light interface, accessible contrast, restrained accent colors and i
 
 ## 7. Definition of MVP complete
 
-An instructor can register a student, publish a reviewed quiz, share its link and export matching scores. A verified active student can complete it from a phone, refresh safely, submit exactly once and revisit their result. Other students cannot access that result, drafts or answer keys. AI failures do not block manual quizzes. Leaderboard and question breakdown calculations match stored submissions. All implementation acceptance checks pass on a staging environment before production use.
+An instructor can approve a registered student, publish a reviewed quiz, share its link and export matching scores. A verified active student can complete it from a phone, refresh safely, submit exactly once and revisit their result. Other students cannot access that result, drafts or answer keys. AI failures do not block manual quizzes. Leaderboard and question breakdown calculations match stored submissions. All implementation acceptance checks pass on a staging environment before production use.
 
 ## 8. Decisions recorded
 

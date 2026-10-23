@@ -196,7 +196,24 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await expect(student.getByText("OFFICIAL ASSESSMENT", { exact: true })).toBeVisible();
   await expect(student.getByText(/Which keyword creates a binding/)).toBeVisible();
   await student.locator(".attempt-option input[type=radio]").first().check();
-  await student.getByRole("button", { name: "Save progress" }).click();
+  await expect(student.getByText(/Answers saved/)).toBeVisible();
+  // Interrupt a save without taking down authentication or the page itself.
+  let connected = false;
+  await student.route("**/api/attempts/*/answers", route => connected ? route.continue() : route.abort("internetdisconnected"));
+  await student.locator(".attempt-option input[type=radio]").nth(1).check();
+  await expect(student.getByRole("alert").filter({ hasText: "Answers not saved" })).toBeVisible();
+  await expect(student.locator(".attempt-option input[type=radio]").nth(1)).toBeChecked();
+  connected = true;
+  await student.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(student.getByText(/Answers saved/)).toBeVisible();
+  await student.unroute("**/api/attempts/*/answers");
+  // The server commits, but the acknowledgement never reaches the browser.
+  await student.route("**/api/attempts/*/answers", async route => {
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    await route.abort("connectionreset");
+  }, { times: 1 });
+  await student.locator(".attempt-option input[type=radio]").first().check();
   await expect(student.getByText(/Answers saved/)).toBeVisible();
   await student.reload();
   await expect(student.getByText(/1 of 1 questions answered/)).toBeVisible();

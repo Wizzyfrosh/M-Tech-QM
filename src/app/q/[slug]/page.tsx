@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, Clock3, LockKeyhole } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { StartQuiz } from "@/components/start-quiz";
 import { pageActor, AccessError } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { studentQuizDetails } from "@/lib/quizzes";
@@ -91,9 +92,10 @@ export default async function Page({
         <p className="notice quiz-lock">
           <LockKeyhole size={17} />
           {closed
-            ? "This quiz is closed."
-            : "This quiz is not accepting attempts yet. Your instructor will let you know when submissions are available."}
+            ? "This quiz is closed. Existing submissions remain available in your history."
+            : "Your answers are saved securely. You may resume this quiz before the deadline."}
         </p>
+        {actor.role === "STUDENT" && <StartQuiz slug={slug} />}
         <Link href="/student/quizzes" className="text-button">
           Back to quizzes
         </Link>

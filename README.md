@@ -1,30 +1,51 @@
 # M Tech QMS
 
-Quiz Management System for one programming instructor and a private student community.
+A mobile-friendly quiz workspace for one programming instructor and a private student community.
 
-**Status:** planning baseline v0.1, 23 October 2026. Application implementation has not started.
+## Implementation status
 
-Create a quiz, share its link, mark submissions automatically, and track student progress. AI assists the instructor with editable quiz drafts from lesson transcripts.
+Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Quiz creation, attempts, grading, reports, leaderboards and AI drafting remain upcoming milestones. The application has not been deployed or connected to production services.
 
-## Planning documents
+## Stack
+
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, PostgreSQL, Prisma 7 and Better Auth. Versions are pinned in `package-lock.json`. Use Node.js 24.
+
+## Local setup
+
+1. Clone the repository and run `npm ci`.
+2. Copy `.env.example` to `.env` and set `DATABASE_URL` to a dedicated development PostgreSQL database. `DIRECT_URL` is optional for migrations when the application connection is pooled.
+3. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` and save it as `BETTER_AUTH_SECRET`. Keep it private.
+4. Set `BETTER_AUTH_URL=http://localhost:3000`. Use the same host when opening the app; origins must match.
+5. Set `MAIL_TRANSPORT=file` for local development. Codes will be written into the ignored `.local-mail` directory. This transport cannot deliver mail in a production build. For Brevo, see [configuration](docs/SETUP.md).
+6. Run `npm run db:migrate` to apply the committed migration to the development database.
+7. Prepare the single instructor account: `npm run instructor:setup -- --email owner@example.com --name "Instructor name"`.
+8. Run `npm run dev`, open `/forgot-password`, request a code for that instructor email and use it on `/reset-password` to choose a password. The code proves email ownership and verifies the account. Then sign in.
+9. Open **Students**, add a student's name/email, and share the application link. The student registers, verifies their email code and signs in. Adding a student does not send an invitation.
+
+The instructor setup command generates an undisclosed random initial password and refuses to create a second instructor. There is no public role-selection or instructor-creation endpoint.
+
+## Checks
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+`npm test` uses a disposable PGlite PostgreSQL-compatible database locally. Set `TEST_DATABASE_URL` to a dedicated local PostgreSQL database whose name ends in `_test` to use PostgreSQL instead. These tests erase that database's `public` schema. Never point test commands at real data. GitHub Actions uses PostgreSQL 16 for integration and browser checks. Browser tests use synthetic accounts and local file mail; they do not contact Brevo.
+
+Use `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` only if a compatible Chromium browser is already installed outside Playwright's cache. See [validation notes](docs/VALIDATION.md) for verified checks and limits.
+
+## Planning and implementation documents
 
 - [Product requirements](docs/PRD.md)
-- [Architecture, data model and API contract](docs/ARCHITECTURE.md)
-- [Implementation milestones and acceptance checks](docs/IMPLEMENTATION.md)
+- [Architecture, data model and API contracts](docs/ARCHITECTURE.md)
+- [Implementation milestones](docs/IMPLEMENTATION.md)
+- [Environment and instructor setup](docs/SETUP.md)
+- [Validation notes](docs/VALIDATION.md)
 - [Engineering instructions](AGENTS.md)
 
-## MVP
-
-Instructor and student accounts, private roster, manual multiple-choice quiz creation, AI draft generation, quiz links, automatic marking, personal result history, instructor results, CSV export, per-quiz leaderboards, and question breakdowns.
-
-One application and one PostgreSQL database. No video hosting, billing, native mobile app, theory marking, or student code execution in this release.
-
-## Proposed implementation
-
-Next.js and TypeScript, Tailwind CSS, PostgreSQL with Prisma, and Better Auth. Hosting, email, database provisioning and the AI provider are selected during implementation; this repository does not provision services or promise free hosting. Use a single server-side AI integration initially.
-
-## Repository setup
-
-Repository: [Wizzyfrosh/M-Tech-QM](https://github.com/Wizzyfrosh/M-Tech-QM); product display name: **M Tech QMS**. The repository is public. Never commit student data, transcripts, production exports, answer keys from real assessments, or credentials.
-
-There are no application commands yet. Add verified installation, migration, development and test instructions when the application is scaffolded.
+Repository: [Wizzyfrosh/M-Tech-QM](https://github.com/Wizzyfrosh/M-Tech-QM). Product name: **M Tech QMS**. Never commit student records, transcripts, exports, real assessment keys or credentials to this public repository.

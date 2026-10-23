@@ -103,14 +103,14 @@ test("student self-registers and verifies; instructor approves and may later sus
   await student.goto("/student/quizzes");
   await expect(student).toHaveURL(/\/dashboard/);
   await page.reload();
-  await expect(page.getByText("browser@example.test", {exact:true})).toBeVisible();
+  await expect(page.locator(".approval-desktop").getByText("browser@example.test", {exact:true})).toBeVisible();
   await page.setViewportSize({width:360,height:780});
   await expect(page.locator(".approval-mobile-list")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.setViewportSize({width:1280,height:800});
   await page.getByRole("row").filter({hasText:"browser@example.test"})
     .getByRole("button",{name:"Approve",exact:true}).click();
-  await expect(page.getByText("browser@example.test",{exact:true})).toHaveCount(0);
+  await expect(page.locator(".approval-desktop").getByText("browser@example.test",{exact:true})).toHaveCount(0);
   await student.reload();
   await expect(student.getByRole("heading", {name:"Welcome back, Browser."})).toBeVisible();
   expect(

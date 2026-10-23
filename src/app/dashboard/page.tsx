@@ -8,6 +8,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Brand } from "@/components/brand";
+import { SignOut } from "@/components/sign-out";
 import { pageIdentity } from "@/lib/access";
 import { getDb } from "@/lib/db";
 export const dynamic = "force-dynamic";
@@ -17,6 +19,7 @@ export default async function Dashboard() {
   if (!instructor && actor.roster?.status === "PENDING") {
     return <main className="standalone" id="main">
       <div className="pending-panel">
+        <Brand />
         <span className="empty-icon"><Clock3 size={28}/></span>
         <span className="eyebrow">EMAIL VERIFIED</span>
         <h1>Waiting for instructor approval</h1>
@@ -25,6 +28,7 @@ export default async function Dashboard() {
         <div className="button-row">
           <Link href="/account" className="button">Manage profile</Link>
           <Link href="/dashboard" className="button primary">Check approval status</Link>
+          <SignOut />
         </div>
       </div>
     </main>;

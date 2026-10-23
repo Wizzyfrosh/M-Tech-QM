@@ -1,5 +1,4 @@
 import "server-only";
-import { after } from "next/server";
 import { createAuth } from "./auth-core";
 import { getDb } from "./db";
 import { sendOtpMail } from "./mail";
@@ -19,14 +18,9 @@ export function getAuth() {
       url,
       secret,
       sendMail: async (message) => {
-        // Retain serverless lifetime without exposing account existence through provider latency.
-        after(async () => {
-          try {
-            await sendOtpMail(message);
-          } catch {
-            console.error("QMS_EMAIL_DELIVERY_FAILED");
-          }
-        });
+        // A failed Brevo request must never be reported as a delivered code.
+        // No email address or OTP is written to application logs.
+        await sendOtpMail(message);
       },
     });
   }

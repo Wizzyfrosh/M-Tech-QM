@@ -212,9 +212,13 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   expect(await exportResponse.text()).toContain("quiz-student@example.test");
   const forbiddenExport = await context.request.get(`/api/instructor/results/${id}/export`);
   expect(forbiddenExport.status()).toBe(403);
-  await student.goto(`/leaderboard/${editor.shareSlug}`);
-  await expect(student.getByRole("heading", { name: "Leaderboard" })).toBeVisible();
-  expect(await student.content()).not.toContain("quiz-student@example.test");
+  // Use a new tab to avoid the previous student's asynchronous post-submit
+  // router.replace() racing with the leaderboard navigation.
+  const rankingPage = await context.newPage();
+  await rankingPage.goto(`/leaderboard/${editor.shareSlug}`, {waitUntil:"domcontentloaded"});
+  await expect(rankingPage.getByRole("heading", { name: "Leaderboard" })).toBeVisible();
+  expect(await rankingPage.content()).not.toContain("quiz-student@example.test");
+  await rankingPage.close();
   await page.goto(`/instructor/quizzes/${id}`);
   await page.getByRole("button", { name: "Archive quiz", exact: true }).click();
   await page

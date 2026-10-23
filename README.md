@@ -4,7 +4,7 @@ A mobile-friendly quiz workspace for one programming instructor and a private st
 
 ## Implementation status
 
-Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Milestone 2 adds manual multiple-choice quiz authoring, reviewed-answer validation, instructor preview, publication, shared details links, duplication, closure and archiving. Published questions and answer keys are locked. Student attempts, grading, reports, leaderboard rankings and AI drafting remain upcoming milestones. The application has not been deployed or connected to production services.
+Milestone 1 is implemented: responsive account pages and dashboards, email-code verification, password recovery, a private student roster, suspend/restore controls, profile settings, server-enforced roles and access, and PostgreSQL migrations. Milestone 2 adds manual multiple-choice quiz authoring, reviewed-answer validation, instructor preview, publication, shared details links, duplication, closure and archiving. Published questions and answer keys are locked. Student attempts, grading, reports, leaderboard rankings and AI drafting remain upcoming milestones. Both implementation milestones are merged into main. The dedicated Neon production database has both migrations applied. Vercel deployment and live Brevo delivery remain pending; see [deployment status](docs/DEPLOYMENT.md).
 
 ## Stack
 

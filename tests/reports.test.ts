@@ -38,7 +38,7 @@ beforeAll(async () => {
     await db.user.create({ data: { id, name: name === "INSTRUCTOR" ? "Instructor" :
       instructorId ? 'Normal Student' : 'Student', email, role: name, emailVerified: true } });
     if (name === "INSTRUCTOR") { instructorId = id; continue; }
-    await db.rosterEntry.create({ data: { name: "Student", normalizedEmail: email, userId: id } });
+    await db.rosterEntry.create({ data: { name: "Student", normalizedEmail: email, userId: id, status: "ACTIVE" } });
     if (!studentId) studentId = id;
     else { optOutId = id; await db.user.update({ where: { id }, data: { leaderboardOptOut: true } }); }
   }
@@ -101,7 +101,7 @@ describe("instructor reports, CSV and leaderboard privacy", () => {
     const outsider = crypto.randomUUID();
     const email = `report-${outsider}@example.test`;
     await db.user.create({ data: { id: outsider, name: "Other", email, role: "STUDENT", emailVerified: true } });
-    await db.rosterEntry.create({ data: { name: "Other", normalizedEmail: email, userId: outsider } });
+    await db.rosterEntry.create({ data: { name: "Other", normalizedEmail: email, userId: outsider, status: "ACTIVE" } });
     const current = await db.quiz.findUniqueOrThrow({ where: { id: quizId } });
     await actOnQuiz(db, instructorId, quizId, current.revision, "close");
     await expect(quizLeaderboard(db, slug, { id: outsider, role: "STUDENT" }))

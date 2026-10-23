@@ -1744,3 +1744,9 @@ select:disabled {
 .result-row small { color: var(--muted); }
 .result-row:hover { color: var(--purple); }
 @media (max-width: 700px) { .attempt-actions .button-row { display: flex; width: 100%; flex-wrap: wrap; } .attempt-actions .button-row > button { flex: 1; justify-content: center; } }
+
+/* First instructor onboarding */
+.activation-complete { display: grid; gap: 14px; text-align: center; justify-items: center; padding: 24px 4px; }
+.activation-complete > svg { color: var(--purple); }
+.activation-complete p { color: var(--muted); }
+.activation-complete .button { margin-top: 8px; }

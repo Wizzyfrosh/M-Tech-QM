@@ -24,11 +24,23 @@ Run `npm run db:migrate` against the intended development database after reviewi
 
 The auth user table stores the display name, role and ranking preference directly. This replaces the separate Profile entity proposed in the logical planning model; it avoids duplicated identity fields while preserving the same access rules. Quiz draft updates and lifecycle changes use row locks and optimistic revisions to prevent stale tabs from overwriting newer work.
 
-## Instructor activation
+## First instructor: browser activation
 
-Run the documented setup command with the designated email and name after migration. It uses an advisory transaction lock and database uniqueness to prevent two instructors, creates an unverified credential account with an undisclosed random password, and writes an audit event. It sends no email.
+No terminal, developer tools or direct database login is required for the instructor. A trusted Neon administrator first provisions exactly one `InstructorInvitation` row (ID `primary`) containing the **explicitly designated** instructor email and name. Never infer the privileged email from another project or turn public instructor signup on.
 
-The owner then uses **Forgot password** and the email code to establish their password. Email OTP recovery verifies ownership, marks the account verified and revokes existing sessions. Instructor registration is never exposed as a public signup option. Re-running setup when an instructor exists fails without modifying that account.
+The instructor then visits `/activate-instructor`, enters the approved email, and requests a six-digit code. The endpoint returns the same message whether or not the email is approved and schedules Brevo delivery after the HTTP response. The code is HMAC-hashed using the auth secret, expires after 10 minutes, has five guesses, and request/redeem actions use the shared database throttle.
+
+After receiving the email, the instructor enters the code and chooses a 12+ character password on the same page. A transaction locks the invite, verifies its code and expiry, creates a verified Better Auth credential account with role INSTRUCTOR, writes an audit event and marks the invite redeemed irrevocably. Database uniqueness prevents a second instructor. The instructor signs in normally and can change the password in Account Settings.
+
+For provisioning through the Neon connector, use an approved email and name, and run the one-time insert only after the migration is applied:
+
+```sql
+INSERT INTO "InstructorInvitation" ("id", "email", "name", "updatedAt")
+VALUES ('primary', lower(trim('approved-instructor@example.com')), 'Approved Instructor', NOW())
+ON CONFLICT ("id") DO NOTHING;
+```
+
+Never expose a public API to create or update the invite. Do not replace or reassign the invitation once redeemed. The old `npm run instructor:setup` command is only an emergency administrator fallback and is **not** part of normal activation.
 
 ## Brevo delivery
 

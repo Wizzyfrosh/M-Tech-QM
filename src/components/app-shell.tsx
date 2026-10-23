@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Brand } from "./brand";
 import { SignOut } from "./sign-out";
+import { ThemeToggle } from "./theme-toggle";
 export function AppShell({
   name,
   role,
@@ -92,6 +93,8 @@ export function AppShell({
             <SignOut />
           </span>
           <span className="topbar-label">Your community. Your progress.</span>
+          <div className="topbar-actions">
+          <ThemeToggle />
           <span className="role-pill">
             <span className="status-dot" />
             {role === "INSTRUCTOR"
@@ -99,6 +102,7 @@ export function AppShell({
               : "Student workspace"}
             <ArrowUpRight size={14} />
           </span>
+          </div>
         </header>
         <main id="main" className="page-content">
           {children}

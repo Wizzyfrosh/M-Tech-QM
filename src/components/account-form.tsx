@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useHydrated } from "@/lib/use-hydrated";
 import { authClient } from "@/lib/auth-client";
+import { ChevronDown, LockKeyhole } from "lucide-react";
+import { ThemeToggle } from "./theme-toggle";
 export function AccountForm({
   name: initialName,
   email,
@@ -17,6 +19,7 @@ export function AccountForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [passwordOpen, setPasswordOpen] = useState(false);
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -53,6 +56,7 @@ export function AccountForm({
       if (r.error)
         throw new Error("Check your current password and try again.");
       form.reset();
+      setPasswordOpen(false);
       setMessage("Password changed. Other sessions have been signed out.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not change password.");
@@ -103,12 +107,19 @@ export function AccountForm({
           </button>
         </form>
       </section>
-      <section className="panel">
+      <section className="panel account-security">
         <h2>Password & security</h2>
         <p className="muted">
-          Use a unique password with at least 8 characters. Longer passwords are recommended.
+          Manage your password and keep your account secure.
         </p>
-        <form className="form-stack" onSubmit={password}>
+        <button type="button" className="button security-disclosure" disabled={busy || !hydrated}
+          aria-expanded={passwordOpen} aria-controls="change-password-form"
+          onClick={() => setPasswordOpen(value => !value)}>
+          <LockKeyhole size={18} /> Change password
+          <ChevronDown size={18} className={passwordOpen ? "disclosure-open" : ""}/>
+        </button>
+        {passwordOpen && <form id="change-password-form" className="form-stack" onSubmit={password}>
+          <p className="muted">Use at least 8 characters. A longer, unique password is recommended.</p>
           <label>
             Current password
             <input
@@ -132,9 +143,15 @@ export function AccountForm({
             />
           </label>
           <button className="button" disabled={busy || !hydrated}>
-            Change password
+            Update password
           </button>
-        </form>
+          <button type="button" className="text-button" disabled={busy}
+            onClick={() => setPasswordOpen(false)}>Cancel password change</button>
+        </form>}
+      </section>
+      <section className="panel account-appearance">
+        <div><h2>Appearance</h2><p className="muted">Choose light or dark mode. Your choice is saved on this device.</p></div>
+        <ThemeToggle />
       </section>
       <div aria-live="polite">
         {error && (

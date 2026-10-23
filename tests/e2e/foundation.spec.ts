@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readdir, readFile, stat } from "node:fs/promises";
+import { expectAligned } from "./layout-checks";
 async function mailCode(email: string, type: string, sentAfter: number) {
   let otp = "";
   await expect
@@ -127,13 +128,29 @@ test("student self-registers and verifies; instructor approves and may later sus
     403,
   );
   await student.getByRole("link", { name: "My account", exact: true }).click();
+  await expect(student.getByLabel("Current password", { exact: true })).toHaveCount(0);
+  await student.getByRole("button", { name: "Change password", exact: true }).click();
+  await expect(student.getByLabel("Current password", { exact: true })).toBeVisible();
+  await expect(student.getByRole("button", { name: "Change password", exact: true })).toHaveAttribute("aria-expanded", "true");
+  await student.getByRole("button", { name: "Cancel password change", exact: true }).click();
+  await expect(student.getByLabel("Current password", { exact: true })).toHaveCount(0);
+  await student.locator(".topbar").getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(student.locator("html")).toHaveAttribute("data-theme", "dark");
+  await student.reload();
+  await expect(student.locator("html")).toHaveAttribute("data-theme", "dark");
+  for (const width of [320, 390, 768, 1280]) {
+    await student.setViewportSize({ width, height: 900 });
+    await expectAligned(student);
+  }
+  await student.setViewportSize({ width: 390, height: 844 });
   await student.getByLabel("Display name").fill("Updated Browser Student");
   await student.getByRole("button", { name: "Save profile" }).click();
   await expect(student.getByText("Profile saved.")).toBeVisible();
   await student.screenshot({
-    path: "test-results/mobile-account.png",
+    path: "test-results/mobile-account-dark.png",
     fullPage: true,
   });
+  await student.locator(".topbar").getByRole("button", { name: "Switch to light mode" }).click();
   await student.getByRole("button", { name: "Sign out", exact: true }).click();
   await student.getByRole("link", { name: "Forgot password?" }).click();
   await expect(
@@ -230,6 +247,16 @@ test("all account pages render at 360px without horizontal overflow", async ({
     ).toBe(true);
   }
   await page.goto("/sign-in");
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expectAligned(page);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "test-results/mobile-sign-in-dark.png", fullPage: true });
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
   await page.screenshot({
     path: "test-results/mobile-sign-in.png",
     fullPage: true,

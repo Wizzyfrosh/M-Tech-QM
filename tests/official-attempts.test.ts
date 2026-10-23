@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { Pool } from "pg";
 import { applyTestMigrations } from "../scripts/test-migrations";
-import { createQuiz, saveQuiz, actOnQuiz } from "../src/lib/quizzes";
+import { createQuiz, actOnQuiz, getQuizEditor } from "../src/lib/quizzes";
 import { blankQuiz } from "../src/lib/quiz-policy";
 import { startAttempt, getAttempt, saveAnswers, submitAttempt, attemptResult, studentHistory } from "../src/lib/attempts";
 
@@ -54,8 +54,8 @@ beforeAll(async () => {
   };
   const row = await createQuiz(db, owner, draft);
   quizId = row.id;
-  const published = await actOnQuiz(db, owner, quizId, 0, "publish");
-  slug = published.shareSlug;
+  await actOnQuiz(db, owner, quizId, 0, "publish");
+  slug = (await getQuizEditor(db, quizId, owner)).shareSlug;
   const question = await db.question.findFirstOrThrow({ where: { quizId }, include: { options: true } });
   firstQuestion = question.id;
   firstOption = question.options.find(o => o.text === "const")!.id;

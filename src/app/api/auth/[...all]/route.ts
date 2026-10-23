@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
 import { consumeEmailQuota } from "@/lib/throttle";
 import { emailSchema } from "@/lib/policy";
+import { trackEmailDelivery } from "@/lib/otp-delivery-receipt";
 import { z } from "zod";
 export const runtime = "nodejs";
 const postPaths = new Set([
@@ -63,14 +64,22 @@ export async function POST(request: Request) {
     }
     const forwardedHeaders = new Headers(request.headers);
     forwardedHeaders.delete("content-length");
-    const response = await getAuth().handler(
+    const { result: response, receipt } = await trackEmailDelivery(() => getAuth().handler(
       new Request(request.url, {
         method: "POST",
         headers: forwardedHeaders,
         body: JSON.stringify(body),
       }),
-    );
-    // Preserve the actual authentication response, including validation failures.
+    ));
+    // Better Auth may catch mail-provider errors and still return signup 200.
+    // Signup can safely report a failed send to the person who just created
+    // the account; unknown-email OTP resends retain enumeration-safe responses.
+    if (path === "/sign-up/email" && response.ok &&
+        (receipt.accepted === 0 || receipt.failed > 0)) {
+      return json({
+        error: "Your account may have been created, but we could not send its verification code. Open Verify email and request a new code.",
+      }, 503);
+    }
     return response;
   } catch (error) {
     return failure(error);

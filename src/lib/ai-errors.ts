@@ -1,4 +1,4 @@
-import { AccessError } from "./access-error";
+import { AccessError } from "./access";
 
 // Fixed messages only: provider bodies can contain account details or lesson text.
 export class AiProviderError extends AccessError {

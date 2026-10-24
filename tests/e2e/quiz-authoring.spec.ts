@@ -169,6 +169,7 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   ).toBeVisible();
   await expect(page.getByLabel("Quiz title", { exact: true })).toBeDisabled();
   await student.goto(`/q/${editor.shareSlug}`);
+  console.log("QMS_STUDENT_LANDING",student.url(),await student.locator("body").innerText());
   await expect(student.getByRole("link", {name:"Watch part 1"})).toHaveAttribute("href","https://example.com/lesson-video-one");
   await expect(student.getByRole("link", {name:"Watch part 2"})).toHaveAttribute("href","https://example.com/lesson-video-two");
   await expect(

@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
+test.use({ actionTimeout: 15000 });
+test.afterEach(async ({page}, info) => {
+  if(info.status !== "passed") console.log("QMS_AI_BROWSER_STATE", page.url(), await page.locator("body").innerText());
+});
 
 test("AI failure preserves notes and retry produces unreviewed editable drafts", async ({ page }) => {
+  page.on("pageerror", error=>console.log("QMS_AI_BROWSER_ERROR",error.message));
   await page.goto("/sign-in");
   await page.getByLabel("Email address", {exact:true}).fill("instructor@example.test");
   await page.getByLabel("Password", {exact:true}).fill("Synthetic-instructor-password-123!");

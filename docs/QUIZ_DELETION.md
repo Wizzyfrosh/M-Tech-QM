@@ -1,0 +1,9 @@
+# Explicit quiz deletion and result release
+
+Results remain hidden until instructor review and confirmation. The report's Release results action uses an inline confirmation explaining that any open quiz will close, blocking further starts/submissions, before releasing scores and answer review. The close and release share the quiz row lock and one transaction. API callers omitting closeQuiz retain the previous requirement to close first. No existing production quiz is automatically closed or released by deployment.
+
+The editor offers Delete quiz permanently for draft, published, closed and archived quizzes. The confirmation requires the exact saved title. Published deletion also requires the title on the server, plus instructor ownership, acknowledgement, revision and same-origin authorization. It removes questions/options/keys, attempts/answers/results, queued result emails, AI-generation records and related student in-app notifications. Previously delivered emails cannot be recalled; their quiz/result links no longer resolve. Minimal audit events remain for accountability.
+
+Deletion locks the quiz, serializing with student start/save/submit, closure and result release. A transaction-local quiz-ID marker permits only the required DELETE operations through database guards. Published UPDATE protections and direct unmarked deletion rejection remain in place. Any error rolls back all deletions. The marker expires with the transaction. Never set it outside the authorized deletion operation.
+
+Validation includes an open quiz with a submitted attempt, explicit close-and-release, wrong-owner/title rejection, direct unmarked-delete rejection, complete related-data removal, unavailable old student links, preservation of another quiz, and browser confirmation/deletion. Production records are not deleted by this release; instructors choose and confirm the quiz themselves.

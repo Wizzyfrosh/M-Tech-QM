@@ -50,6 +50,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [deleteTitle,setDeleteTitle] = useState("");
   const [confirm, setConfirm] = useState<Action | null>(null);
   const [settingsDeadline, setSettingsDeadline] = useState(initial.deadline);
   const [settingsRanking, setSettingsRanking] = useState(
@@ -68,6 +69,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+  useEffect(()=>{if(confirm)document.querySelector(".action-confirm")?.scrollIntoView({block:"center"});},[confirm]);
   function change<T extends keyof QuizDraft>(key: T, value: QuizDraft[T]) {
     setDraft((current) => ({ ...current, [key]: value }));
     setMessage("");
@@ -141,6 +143,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
         {
           revision: saved.revision,
           ...(action === "duplicate" ? {} : { acknowledged: true }),
+          ...(action === "delete" ? {confirmTitle:deleteTitle} : {}),
         },
         action === "delete" ? "DELETE" : "POST",
       );
@@ -269,24 +272,25 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
             {confirm === "publish"
               ? "Publish this quiz?"
               : confirm === "delete"
-                ? "Delete this draft?"
+                ? "Permanently delete this quiz?"
                 : confirm === "close"
                   ? "Close this quiz now?"
                   : "Archive this quiz?"}
           </h2>
           <p>
             {confirm === "publish"
-              ? "Questions, marks and correct answers will be locked. A shareable details page will be available; student submissions are not available yet."
+              ? "Questions, marks and correct answers will be locked. Approved students will be able to open the shared quiz and submit their answers."
               : confirm === "delete"
-                ? "This permanently removes this draft."
+                ? "This permanently removes the quiz, all questions, attempts, scores and related in-app notifications. Students cannot open its old link or take it. Previously sent emails cannot be recalled."
                 : confirm === "close"
-                  ? "Students will no longer be able to submit answers when attempts are enabled. The quiz cannot be reopened."
+                  ? "Students will no longer be able to start or submit this quiz. The quiz cannot be reopened."
                   : "The quiz will leave the active list. Its records will be preserved."}
           </p>
+          {confirm === "delete" && <label>Type the quiz title to confirm<input value={deleteTitle} onChange={e=>setDeleteTitle(e.target.value)} autoComplete="off"/></label>}
           <div className="button-row">
             <button
               className={`button ${confirm === "delete" ? "danger" : "primary"}`}
-              disabled={disabled}
+              disabled={disabled || (confirm === "delete" && deleteTitle !== saved.title)}
               onClick={() => act(confirm)}
             >
               Confirm {confirm}
@@ -629,9 +633,9 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
               <button
                 className="text-button"
                 disabled={disabled || dirty}
-                onClick={() => setConfirm("delete")}
+                onClick={() => {setDeleteTitle("");setConfirm("delete");}}
               >
-                Delete draft
+                Delete quiz permanently
               </button>
             </section>
           ) : (
@@ -700,6 +704,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
           )}
           <section className="panel">
             <h2>Quiz actions</h2>
+            {locked && <button className="button danger" disabled={disabled} onClick={()=>{setDeleteTitle("");setConfirm("delete");}}>Delete quiz permanently</button>}
             <div className="form-stack">
               <button
                 className="button"

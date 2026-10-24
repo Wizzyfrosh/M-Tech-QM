@@ -9,9 +9,9 @@ export async function POST(request: Request, { params }: { params: Promise<{id:s
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
-    await readJson(request, z.object({ acknowledged: z.literal(true) }).strict());
+    const input = await readJson(request, z.object({ acknowledged: z.literal(true),closeQuiz:z.boolean().default(false) }).strict());
     const { id } = await params;
-    const result = await releaseResults(getDb(), actor.id, id);
+    const result = await releaseResults(getDb(), actor.id, id, input.closeQuiz);
     if (result.alreadyReleased) await getDb().resultEmailBatch.updateMany({ where: { quizId: id, status: "FAILED" }, data: { status: "PENDING" } });
     after(async () => { try { await deliverResultEmails(getDb(), id); } catch { console.error("QMS_RESULT_EMAIL_QUEUE_FAILED"); } });
     return json(result);

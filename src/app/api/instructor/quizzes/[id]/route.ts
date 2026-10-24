@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { requireInstructor } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
@@ -40,14 +41,14 @@ export async function DELETE(request: Request, context: Context) {
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
-    const { revision } = await readJson(request, acknowledgeSchema);
+    const { revision, confirmTitle } = await readJson(request, acknowledgeSchema.extend({confirmTitle:z.string().max(120).optional()}));
     return json(
       await actOnQuiz(
         getDb(),
         actor.id,
         (await context.params).id,
         revision,
-        "delete",
+        "delete", confirmTitle,
       ),
     );
   } catch (e) {

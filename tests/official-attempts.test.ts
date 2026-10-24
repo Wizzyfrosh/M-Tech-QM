@@ -188,3 +188,19 @@ it.skipIf(!process.env.TEST_DATABASE_URL)("runs a 25-student concurrency pilot w
   }));
   console.info("QMS_SYNTHETIC_DATABASE_PILOT", JSON.stringify({ roster: 100, active: 25, duplicateResults: 0, lostAcknowledgedAnswers: 0, operations: summary }));
 }, 60000);
+
+it("explicitly closes and releases an open quiz, then permanently removes a confirmed test quiz and its attempts",async()=>{
+ const draft={...blankQuiz(),title:"Disposable test quiz",lessonLabel:"Test",questions:[{prompt:"Which value is the first option?",explanation:"The first option is correct.",marks:1,reviewed:true,correctIndex:0,options:["First","Second","Third","Fourth"]}]};
+ const q=await createQuiz(db,owner,draft);await actOnQuiz(db,owner,q.id,0,"publish");const quiz=await getQuizEditor(db,q.id,owner);
+ const attempt=await startAttempt(db,student,"STUDENT",quiz.shareSlug);await submitAttempt(db,attempt.id,student,"STUDENT",0,[]);
+ await expect(releaseResults(db,owner,q.id)).rejects.toMatchObject({status:409});
+ await releaseResults(db,owner,q.id,true);const closed=await getQuizEditor(db,q.id,owner);expect(closed.status).toBe("CLOSED");expect((await attemptResult(db,attempt.id,student,"STUDENT")).reviewAvailable).toBe(true);
+ await expect(actOnQuiz(db,student,q.id,closed.revision,"delete",quiz.title)).rejects.toMatchObject({status:404});
+ await expect(actOnQuiz(db,owner,q.id,closed.revision,"delete","Wrong title")).rejects.toMatchObject({status:409});
+ await expect(db.$transaction(tx=>tx.quiz.delete({where:{id:q.id}}))).rejects.toBeDefined();
+ await actOnQuiz(db,owner,q.id,closed.revision,"delete",quiz.title);
+ expect(await db.quiz.findUnique({where:{id:q.id}})).toBeNull();expect(await db.attempt.count({where:{quizId:q.id}})).toBe(0);expect(await db.attemptAnswer.count({where:{quizId:q.id}})).toBe(0);expect(await db.question.count({where:{quizId:q.id}})).toBe(0);expect(await db.resultEmailBatch.count({where:{quizId:q.id}})).toBe(0);
+ expect(await db.notification.count({where:{eventKey:{in:[`published:${q.id}`,`results:${q.id}`]}}})).toBe(0);
+ await expect(startAttempt(db,student,"STUDENT",quiz.shareSlug)).rejects.toMatchObject({status:404});await expect(attemptResult(db,attempt.id,student,"STUDENT")).rejects.toMatchObject({status:404});
+ expect(await db.quiz.findUnique({where:{id:quizId}})).not.toBeNull();
+});

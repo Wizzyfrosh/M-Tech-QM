@@ -438,6 +438,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
                   <label>
                     Question text
                     <textarea
+                      aria-label="Question text"
                       className="code-text"
                       value={q.prompt}
                       onChange={(e) =>
@@ -492,6 +493,7 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
                     <label>
                       Answer explanation
                       <textarea
+                        aria-label="Answer explanation"
                         value={q.explanation}
                         maxLength={4000}
                         rows={2}

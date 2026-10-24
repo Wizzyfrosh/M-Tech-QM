@@ -42,7 +42,7 @@ test("AI failure preserves notes and retry produces unreviewed editable drafts",
   await generate.click();
   await expect(panel.getByRole("status")).toContainText("1 suggestions generated with openrouter");
   await panel.getByRole("button",{name:"Add 1 to editable quiz"}).click();
-  const question = page.locator(".question-card");
+  const question = page.getByRole("group",{name:"Question 1",exact:true});
   await expect(question).toHaveCount(1);
   await expect(question.getByLabel("Question text",{exact:true})).toHaveValue("Which JavaScript declaration prevents reassignment?");
   await expect(question.getByRole("checkbox",{name:/I reviewed this question/})).not.toBeChecked();
@@ -50,7 +50,7 @@ test("AI failure preserves notes and retry produces unreviewed editable drafts",
   await page.getByRole("button",{name:"Save draft",exact:true}).click();
   await expect(page.getByText("Draft saved.",{exact:true})).toBeVisible();
   await page.reload();
-  await expect(page.locator(".question-card").getByLabel("Question text",{exact:true}))
+  await expect(page.getByRole("group",{name:"Question 1",exact:true}).getByLabel("Question text",{exact:true}))
     .toHaveValue("Which JavaScript declaration prevents reassignment?");
   expect(calls).toBe(2);
 });

@@ -33,7 +33,8 @@ export async function requestInstructorActivation(db: PrismaClient, email: strin
     if (!invite || invite.email !== email || invite.redeemedAt
         || await tx.user.findFirst({ where: { role: "INSTRUCTOR" }, select: { id: true } })
         || await tx.user.findUnique({ where: { email }, select: { id: true } })) return null;
-    const now = new Date();
+    const clock = await tx.$queryRaw<{ now: Date }[]>`SELECT clock_timestamp() AS "now"`;
+    const now = clock[0].now;
     if (invite.requestedAt && now.getTime() - invite.requestedAt.getTime() < 60_000) return null;
     const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
     await tx.instructorInvitation.update({ where: { id: "primary" }, data: {

@@ -16,3 +16,5 @@ private-data/
 src/generated/
 *.tsbuildinfo
 .env.test
+
+.local-assignment-files/

@@ -101,6 +101,7 @@ export function AssignmentReview({ initial }: { initial: Submission }) {
           responseText={data.responseText}
           projectUrl={data.projectUrl}
           evidenceUrls={data.evidenceUrls}
+          files={data.files}
         />
         {data.status === "DRAFT" && (
           <p className="notice">
@@ -222,6 +223,7 @@ export function AssignmentReview({ initial }: { initial: Submission }) {
                 responseText={v.responseText}
                 projectUrl={v.projectUrl}
                 evidenceUrls={v.evidenceUrls}
+                files={v.files}
               />
             </details>
           ))}

@@ -2124,3 +2124,15 @@ body { background: var(--page); color: var(--ink); }
 }
 .assignment-form .check-line { display:flex; align-items:flex-start; gap:10px; font-weight:400; }
 .assignment-form .check-line input { width:18px; height:18px; margin-top:2px; padding:0; flex-shrink:0; }
+.assignment-upload { border:1px solid var(--border); border-radius:12px; padding:20px; min-width:0; }
+.assignment-upload h3 { margin-top:0; }
+.assignment-upload-label { padding:16px; border:1px dashed var(--accent-border); border-radius:10px; background:var(--soft); }
+.assignment-upload input[type=file] { padding:8px; background:var(--surface); }
+.assignment-upload-list,.assignment-file-links { list-style:none; padding:0; margin:16px 0; }
+.assignment-upload-list li { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--border); padding:12px 0; }
+.assignment-upload-list li > span,.assignment-file-links span { min-width:0; overflow-wrap:anywhere; }
+.assignment-upload-list .button { flex-shrink:0; }
+.assignment-upload-list small,.assignment-file-links small { display:block; color:var(--muted); margin-top:4px; font-size:12px; }
+.assignment-file-links a { display:flex; align-items:flex-start; gap:12px; padding:12px; border:1px solid var(--border); border-radius:8px; margin-top:10px; color:var(--purple); }
+.assignment-file-links svg { flex-shrink:0; margin-top:3px; }
+@media(max-width:480px) { .assignment-upload { padding:14px; } }

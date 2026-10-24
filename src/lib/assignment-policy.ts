@@ -36,6 +36,7 @@ export const assignmentActionSchema = z
 export const submissionSchema = z
   .object({
     action: z.enum(["save", "submit", "edit"]),
+  attachmentIds: z.array(z.uuid()).max(5).optional(),
     revision: z.number().int().min(0),
     responseText: z.string().trim().max(20000),
     projectUrl: z.union([z.literal(""), httpsUrl]),

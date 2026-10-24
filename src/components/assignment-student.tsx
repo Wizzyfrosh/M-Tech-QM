@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { AssignmentFileUpload } from "./assignment-file-upload";
+import type { AssignmentFileInfo } from "@/lib/assignment-file-policy";
 import { useEffect, useState } from "react";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import type { assignmentDetail } from "@/lib/assignments";
@@ -24,12 +26,18 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
     initial.submission?.evidenceUrls.join("\n") ?? "",
   );
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState<AssignmentFileInfo[]>(
+    initial.submission?.files ?? [],
+  );
   const [confirm, setConfirm] = useState<"submit" | "edit" | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const a = data.assignment,
     s = data.submission;
   const dirty =
+    JSON.stringify(files.map((f) => f.id)) !==
+      JSON.stringify(s?.attachmentIds ?? []) ||
     responseText !== (s?.responseText ?? "") ||
     projectUrl !== (s?.projectUrl ?? "") ||
     evidence !== (s?.evidenceUrls.join("\n") ?? "");
@@ -46,6 +54,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
     try {
       await assignmentRequest(`/api/assignments/${a.id}/submission`, "POST", {
         action,
+        attachmentIds: files.map((f) => f.id),
         revision: s?.revision ?? 0,
         responseText,
         projectUrl: projectUrl.trim(),
@@ -58,6 +67,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
         `/api/assignments/${a.id}`,
       );
       setData(result);
+      setFiles(result.submission?.files ?? []);
       setResponse(result.submission?.responseText ?? "");
       setProject(result.submission?.projectUrl ?? "");
       setEvidence(result.submission?.evidenceUrls.join("\n") ?? "");
@@ -171,7 +181,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
                 setResponse(e.target.value);
                 setConfirm(null);
               }}
-              disabled={busy}
+              disabled={busy || uploading}
               placeholder={
                 a.submissionType === "PROJECT"
                   ? "Explain your implementation, what works, and any difficulties."
@@ -182,8 +192,9 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
           {a.submissionType === "PROJECT" && (
             <>
               <label>
-                GitHub commit link
+                GitHub commit link (optional when attaching a project ZIP)
                 <input
+                  aria-label="GitHub commit link"
                   type="url"
                   maxLength={2000}
                   value={projectUrl}
@@ -191,7 +202,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
                     setProject(e.target.value);
                     setConfirm(null);
                   }}
-                  disabled={busy}
+                  disabled={busy || uploading}
                   placeholder="https://github.com/your-name/project/commit/full-commit-id"
                 />
               </label>
@@ -222,19 +233,30 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
                 setEvidence(e.target.value);
                 setConfirm(null);
               }}
-              disabled={busy}
+              disabled={busy || uploading}
               placeholder="Link to screenshots, a demonstration video, or a live web build."
             />
           </label>
           <p className="muted">
-            Use links your instructor can open. This version accepts text and
-            links, rather than direct file or APK uploads.
+            Use links your instructor can open. For a coding assignment, attach
+            a project ZIP or provide a fixed GitHub commit link. APK files are
+            not accepted.
           </p>
+          <AssignmentFileUpload
+            assignmentId={a.id}
+            value={files}
+            onChange={(value) => {
+              setFiles(value);
+              setConfirm(null);
+            }}
+            disabled={busy || uploading}
+            onBusyChange={setUploading}
+          />
           <div className="button-row">
             <button
               className="button"
               type="button"
-              disabled={busy}
+              disabled={busy || uploading}
               onClick={() => void act("save")}
             >
               Save draft
@@ -242,7 +264,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
             <button
               className="button primary"
               type="submit"
-              disabled={busy || !responseText.trim()}
+              disabled={busy || uploading || !responseText.trim()}
             >
               Submit assignment
             </button>
@@ -264,6 +286,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
                 responseText={data.versions[0]?.responseText ?? ""}
                 projectUrl={data.versions[0]?.projectUrl ?? ""}
                 evidenceUrls={data.versions[0]?.evidenceUrls ?? []}
+                files={data.versions[0]?.files ?? []}
               />
             </>
           ) : (
@@ -275,7 +298,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
           {data.canEdit && (
             <button
               className="button"
-              disabled={busy}
+              disabled={busy || uploading}
               onClick={() => setConfirm("edit")}
             >
               Edit submission
@@ -298,7 +321,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
           <div className="button-row">
             <button
               className="button primary"
-              disabled={busy}
+              disabled={busy || uploading}
               onClick={() => void act(confirm)}
             >
               {busy
@@ -309,7 +332,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
             </button>
             <button
               className="button"
-              disabled={busy}
+              disabled={busy || uploading}
               onClick={() => setConfirm(null)}
             >
               Cancel
@@ -334,6 +357,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
                 responseText={v.responseText}
                 projectUrl={v.projectUrl}
                 evidenceUrls={v.evidenceUrls}
+                files={v.files}
               />
             </details>
           ))}

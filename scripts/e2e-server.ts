@@ -62,6 +62,7 @@ for (const fixture of [
 }
 await pool.end();
 await rm(".local-mail", { recursive: true, force: true });
+await rm(".local-assignment-files", { recursive: true, force: true });
 const child = spawn(
   process.execPath,
   [
@@ -82,6 +83,7 @@ const child = spawn(
       BETTER_AUTH_URL: "http://127.0.0.1:3100",
       BETTER_AUTH_SECRET: "test-only-secret-for-local-browser-checks-123456789",
       MAIL_TRANSPORT: "file",
+      QMS_UPLOAD_DRIVER: "file",
       NEXT_TELEMETRY_DISABLED: "1",
     },
   },

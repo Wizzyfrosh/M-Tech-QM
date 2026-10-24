@@ -266,7 +266,8 @@ export function AssignmentEditor({
           <p className="muted">
             Published instructions, deadlines and maximum marks are locked.
             Check the brief before publishing. Project submissions require a
-            fixed GitHub commit link; files are not uploaded in this version.
+            fixed GitHub commit link or an uploaded project ZIP. Students can
+            also attach PDFs and screenshots.
           </p>
           <button className="button primary" type="submit" disabled={busy}>
             <Save size={16} />

@@ -6,6 +6,8 @@ import type {
 } from "@/generated/prisma/client";
 import { AccessError } from "./access";
 import { notify } from "./notifications";
+import { assignmentFileInfos } from "./assignment-files";
+import { MAX_SUBMISSION_BYTES } from "./assignment-file-policy";
 import {
   assignmentDraftSchema,
   pinnedGitHubLink,
@@ -168,14 +170,37 @@ export async function assignmentDetail(
           take: 20,
         })
       : [];
+    const allFiles = await assignmentFileInfos(
+      tx,
+      [
+        ...new Set([
+          ...(sub?.attachmentIds ?? []),
+          ...versions.flatMap((v) => v.attachmentIds),
+        ]),
+      ],
+      id,
+      actor,
+    );
+    const filesFor = (ids: string[]) =>
+      ids
+        .map((id) => allFiles.find((f) => f.id === id))
+        .filter((f): f is (typeof allFiles)[number] => !!f);
     const time = await now(tx);
     const eligible =
       a.status === "PUBLISHED" &&
       (!a.deadline || a.allowLate || a.deadline > time);
     return {
       assignment: a,
-      submission: ownSubmission(sub),
-      versions,
+      submission: sub
+        ? {
+            ...ownSubmission(sub)!,
+            files: filesFor(sub.attachmentIds),
+          }
+        : null,
+      versions: versions.map((v) => ({
+        ...v,
+        files: filesFor(v.attachmentIds),
+      })),
       canWrite:
         (eligible && (!sub || sub.status === "DRAFT")) ||
         (sub?.status === "CHANGES_REQUESTED" &&
@@ -350,7 +375,10 @@ export async function writeSubmission(
         old.revision === input.revision + 1 &&
         old.responseText === input.responseText &&
         old.projectUrl === input.projectUrl &&
-        JSON.stringify(old.evidenceUrls) === JSON.stringify(input.evidenceUrls)
+        JSON.stringify(old.evidenceUrls) ===
+          JSON.stringify(input.evidenceUrls) &&
+        JSON.stringify(old.attachmentIds) ===
+          JSON.stringify(input.attachmentIds ?? [])
       )
         return { id: old.id, revision: old.revision, status: old.status };
       revision(old?.revision ?? 0, input.revision);
@@ -390,6 +418,22 @@ export async function writeSubmission(
           409,
           "This work is locked for review. Your instructor can request changes.",
         );
+      const attachmentIds = input.attachmentIds ?? [];
+      const files = await assignmentFileInfos(tx, attachmentIds, id, userId);
+      if (
+        new Set(attachmentIds).size !== attachmentIds.length ||
+        attachmentIds.length > 5 ||
+        files.length !== attachmentIds.length
+      )
+        throw new AccessError(
+          400,
+          "One or more files are not ready or do not belong to your assignment.",
+        );
+      if (files.reduce((sum, f) => sum + f.size, 0) > MAX_SUBMISSION_BYTES)
+        throw new AccessError(
+          400,
+          "Attach no more than 9 MB of files in one submission.",
+        );
       if (input.action === "submit") {
         if (!input.responseText.trim())
           throw new AccessError(
@@ -398,17 +442,19 @@ export async function writeSubmission(
           );
         if (
           a.submissionType === "PROJECT" &&
-          !pinnedGitHubLink(input.projectUrl)
+          !pinnedGitHubLink(input.projectUrl) &&
+          !files.some((f) => f.extension === "zip")
         )
           throw new AccessError(
             400,
-            "Submit a GitHub commit link with its full 40-character commit ID so your work has a fixed version.",
+            "Attach your Flutter project ZIP or submit a fixed GitHub commit link with its full 40-character commit ID.",
           );
       }
       const data = {
         responseText: input.responseText,
         projectUrl: input.projectUrl,
         evidenceUrls: input.evidenceUrls,
+        attachmentIds,
       };
       const submission =
         old ??
@@ -539,8 +585,22 @@ export async function instructorSubmission(
     });
     if (!s) throw new AccessError(404, "Submission not found.");
     // Student drafts are private; review the last formally submitted snapshot only.
+    const allFiles = await assignmentFileInfos(
+      tx,
+      [...new Set(s.versions.flatMap((v) => v.attachmentIds))],
+      id,
+      s.userId,
+    );
+    const versions = s.versions.map((v) => ({
+      ...v,
+      files: v.attachmentIds
+        .map((id) => allFiles.find((f) => f.id === id))
+        .filter((f): f is (typeof allFiles)[number] => !!f),
+    }));
     return {
       ...s,
+      versions,
+      files: versions[0]?.files ?? [],
       responseText: s.versions[0]?.responseText ?? "",
       projectUrl: s.versions[0]?.projectUrl ?? "",
       evidenceUrls: s.versions[0]?.evidenceUrls ?? [],

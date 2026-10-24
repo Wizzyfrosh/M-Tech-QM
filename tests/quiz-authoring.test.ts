@@ -1,3 +1,4 @@
+vi.mock("next/server",()=>({after:()=>{}}));
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";

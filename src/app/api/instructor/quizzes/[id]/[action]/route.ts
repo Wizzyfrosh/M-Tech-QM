@@ -1,3 +1,6 @@
+export const maxDuration = 60;
+import { after } from "next/server";
+import { deliverNotifications } from "@/lib/notifications";
 import { requireInstructor } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
@@ -12,6 +15,7 @@ export async function POST(request: Request, context: Context) {
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
+    after(()=>deliverNotifications(getDb()));
     const { id, action } = await context.params;
     if (!["publish", "duplicate", "close", "archive"].includes(action))
       return json({ error: "Not found." }, 404);
@@ -36,6 +40,7 @@ export async function PATCH(request: Request, context: Context) {
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
+    after(()=>deliverNotifications(getDb()));
     const { id, action } = await context.params;
     if (action !== "settings") return json({ error: "Not found." }, 404);
     return json(

@@ -1,3 +1,4 @@
+import { notifyPublished } from "./notifications";
 import "server-only";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { AccessError } from "./access";
@@ -244,6 +245,7 @@ export async function actOnQuiz(
             revision: { increment: 1 },
           },
         });
+        await notifyPublished(tx,quiz);
       } else if (action === "close") {
         if (quiz.status !== "PUBLISHED")
           throw new AccessError(409, "Only a published quiz can be closed.");

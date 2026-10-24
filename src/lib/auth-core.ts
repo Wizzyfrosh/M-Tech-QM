@@ -1,3 +1,4 @@
+import { notifyRegistration } from "./notifications";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -89,6 +90,13 @@ export function createAuth(
     },
     databaseHooks: {
       user: {
+        update: {after: async (user) => {
+          const verified=await db.user.findUnique({where:{id:user.id},select:{id:true,name:true,email:true,emailVerified:true,role:true,roster:{select:{status:true}}}});
+          if(verified?.role === "STUDENT" && verified.emailVerified && verified.roster?.status === "PENDING") {
+            const owners=await db.user.findMany({where:{role:"INSTRUCTOR",emailVerified:true},select:{id:true}});
+            await db.notification.createMany({skipDuplicates:true,data:owners.map(o=>({userId:o.id,eventKey:`verified:${user.id}`,kind:"REGISTRATION_VERIFIED",title:"Student ready for approval",message:`${verified.name} (${verified.email}) verified their email. Review their registration to approve access.`,href:"/instructor/students"}))});
+          }
+        }},
         create: {
           before: async (user) => {
             const email = emailSchema.parse(user.email);
@@ -102,6 +110,7 @@ export function createAuth(
             };
           },
           after: async (user) => {
+            await notifyRegistration(db,user);
             // Preserve existing approvals but default all new self-registrations to pending.
             await db.rosterEntry.upsert({
               where: { normalizedEmail: user.email },

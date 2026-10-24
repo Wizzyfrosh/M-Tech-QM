@@ -1,3 +1,7 @@
+export const maxDuration = 60;
+import { after } from "next/server";
+import { deliverNotifications } from "@/lib/notifications";
+import { notifyAccess } from "@/lib/notifications";
 import { requireInstructor } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
@@ -9,6 +13,7 @@ export async function PATCH(
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
+    after(()=>deliverNotifications(getDb()));
     const { id } = await context.params;
     const data = await readJson(request, studentUpdateSchema);
     const db = getDb();
@@ -31,6 +36,7 @@ export async function PATCH(
           entityId: id,
         },
       });
+      await notifyAccess(tx,row);
       return true;
     });
     return changed

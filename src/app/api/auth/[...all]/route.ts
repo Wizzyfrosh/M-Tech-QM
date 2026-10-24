@@ -1,3 +1,6 @@
+export const maxDuration = 60;
+import { after } from "next/server";
+import { deliverNotifications } from "@/lib/notifications";
 import { getAuth } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
@@ -88,6 +91,7 @@ export async function POST(request: Request) {
       }
       return response;
     });
+    if(response.ok && ["/sign-up/email","/email-otp/verify-email"].includes(path)) after(()=>deliverNotifications(getDb()));
     // Better Auth may catch mail-provider errors and still return signup 200.
     // Signup can safely report a failed send to the person who just created
     // the account; unknown-email OTP resends retain enumeration-safe responses.

@@ -82,6 +82,15 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await question
     .getByRole("checkbox", { name: /I reviewed this question/ })
     .check();
+  await page.getByRole("button", { name: "Add question", exact: true }).click();
+  const secondQuestion = page.getByRole("group", { name: "Question 2", exact: true });
+  await secondQuestion.getByLabel("Question text", { exact: true }).fill("Which value is a boolean?");
+  for (const [i, option] of ["true", "42", "hello", "null"].entries())
+    await secondQuestion.getByLabel(`Option ${String.fromCharCode(65 + i)}`, { exact: true }).fill(option);
+  await secondQuestion.getByRole("radio", { name: "Mark option A correct", exact: true }).check();
+  await secondQuestion.getByLabel("Answer explanation", { exact: true }).fill("true is a boolean value.");
+  await secondQuestion.getByLabel("Marks", { exact: true }).fill("3");
+  await secondQuestion.getByRole("checkbox", { name: /I reviewed this question/ }).check();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByText("Draft saved.", { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -218,12 +227,14 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   }, { times: 1 });
   await student.locator(".attempt-option input[type=radio]").first().check();
   await expect(student.getByText(/Answers saved/)).toBeVisible();
+  await student.locator(".attempt-option input[type=radio]").last().check();
+  await expect(student.getByText(/Answers saved/)).toBeVisible();
   await student.reload();
-  await expect(student.getByText(/1 of 1 questions answered/)).toBeVisible();
+  await expect(student.getByText(/2 of 2 questions answered/)).toBeVisible();
   student.once("dialog", dialog => dialog.accept());
   await student.getByRole("button", { name: "Submit final answers" }).click();
   await expect(student.getByText("Submission recorded", { exact: true })).toBeVisible();
-  await expect(student.getByText("3 / 3", { exact: true })).not.toBeVisible();
+  await expect(student.getByText("3 / 6", { exact: true })).not.toBeVisible();
   await expect(student.getByText(/Your submission is awaiting instructor review/)).toBeVisible();
   expect(await student.content()).not.toContain("PRIVATE_EXPLANATION");
   await page.getByRole("button", { name: "Close quiz", exact: true }).click();
@@ -240,7 +251,31 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   expect((await releaseResponse).status()).toBe(200);
   await expect(page.getByText("Students can now view their scores and full reviews.")).toBeVisible();
   await student.reload();
-  await expect(student.getByText("3 / 3", { exact: true })).toBeVisible();
+  await expect(student.getByText("3 / 6", { exact: true })).toBeVisible();
+  await expect(student.locator(".result-options .correct-option")).toHaveCount(2);
+  await expect(student.locator(".result-options .incorrect-option")).toHaveCount(1);
+  await expect(student.getByText("Your answer — correct", { exact: true })).toBeVisible();
+  await expect(student.getByText("Your answer — incorrect", { exact: true })).toBeVisible();
+  await expect(student.getByText("Correct answer", { exact: true })).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    await student.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const width of [320, 390, 768]) {
+      await student.setViewportSize({ width, height: 900 });
+      expect(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    for (const [selector, token] of [[".correct-option", "--success"], [".incorrect-option", "--danger"]]) {
+      const color = await student.locator(`.result-options ${selector}`).first().evaluate((el, token) => {
+        const probe = document.createElement("span");
+        probe.style.color = `var(${token})`;
+        el.append(probe);
+        const expected = getComputedStyle(probe).color;
+        probe.remove();
+        return { actual: getComputedStyle(el).color, expected };
+      }, token);
+      expect(color.actual).toBe(color.expected);
+    }
+  }
+
   const exportResponse = await page.request.get(`/api/instructor/results/${id}/export`);
   expect(exportResponse.status()).toBe(200);
   expect(exportResponse.headers()["content-type"]).toContain("text/csv");
@@ -270,7 +305,7 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("checkbox", { name: /I reviewed this question/ }),
+    page.getByRole("checkbox", { name: /I reviewed this question/ }).first(),
   ).not.toBeChecked();
   await page.getByRole("button", { name: "Delete quiz permanently", exact: true }).click();
   await page.getByLabel("Type the quiz title to confirm").fill("JavaScript foundations (copy)");

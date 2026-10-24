@@ -23,12 +23,13 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
     : <div className="preview-questions">{result.questions?.map((q,i) => <section className="panel" key={q.id}>
       <div className="panel-heading"><h2>Question {i+1}</h2><span className="badge lavender">{q.awardedMarks}/{q.marks} marks</span></div>
       <p className="question-prompt">{q.prompt}</p>
-      <ol className="preview-options">{q.options.map((opt,k) =>
-        <li key={opt.id} className={opt.id === q.correctOptionId ? "correct-option" : ""}>
+      <ol className="preview-options result-options">{q.options.map((opt,k) =>
+        <li key={opt.id} className={opt.id === q.correctOptionId ? "correct-option" : opt.id === q.selectedOptionId ? "incorrect-option" : ""}>
           <span>{String.fromCharCode(65+k)}</span><p>{opt.text}</p>
-          {opt.id === q.correctOptionId && <strong>Correct</strong>}
-          {opt.id === q.selectedOptionId && <small>Your selection</small>}
+          {opt.id === q.correctOptionId && <strong>{opt.id === q.selectedOptionId ? "Your answer — correct" : "Correct answer"}</strong>}
+          {opt.id === q.selectedOptionId && opt.id !== q.correctOptionId && <strong>Your answer — incorrect</strong>}
         </li>)}</ol>
+      {!q.selectedOptionId && <p className="muted">You did not answer this question.</p>}
       <div className="answer-explanation"><strong>Explanation</strong><p>{q.explanation}</p></div>
     </section>)}</div>}
     <Link className="button" href="/student/quizzes">Back to quizzes</Link>

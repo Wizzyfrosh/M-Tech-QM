@@ -28,6 +28,10 @@ After signing in as the instructor, open **Quizzes**, create a draft, add four-o
 
 The instructor setup command generates an undisclosed random initial password and refuses to create a second instructor. There is no public role-selection or instructor-creation endpoint.
 
+## Assignments
+
+Assignments have their own workspace, independent of quizzes. Publish written tasks or Flutter projects, collect text and fixed GitHub commit/evidence links, review versions, request corrections, save private marks and release feedback to approved students. Direct file uploads are deferred. See [the assignment workflow](docs/ASSIGNMENTS.md).
+
 ## Checks
 
 ```bash

@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   BookOpen,
   ClipboardList,
+  ClipboardPenLine,
   BarChart3,
   Download,
 } from "lucide-react";
@@ -47,6 +48,7 @@ export function AppShell({
       icon: BookOpen,
       id: "quizzes",
     },
+    { href: role === "INSTRUCTOR" ? "/instructor/assignments" : "/student/assignments", label: "Assignments", icon: ClipboardPenLine, id: "assignments" },
     ...(role === "INSTRUCTOR" ? [{ href: "/instructor/results", label: "Results", icon: BarChart3, id: "results" }] : []),
     ...(role === "STUDENT" ? [{ href: "/student/results", label: "Results", icon: ClipboardList, id: "history" }] : []),
     { href: "/account", label: "My account", icon: UserRound, id: "account" },

@@ -1,3 +1,4 @@
+import { NotificationBell } from "./notification-bell";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -96,6 +97,7 @@ export function AppShell({
           </span>
           <span className="topbar-label">Your community. Your progress.</span>
           <div className="topbar-actions">
+          <NotificationBell/>
           <Link href="/install" className="button install-link"><Download size={16}/><span>Install app</span></Link>
           <span className="role-pill">
             <span className="status-dot" />

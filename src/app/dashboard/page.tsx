@@ -27,6 +27,7 @@ export default async function Dashboard() {
         <p>You can sign in at any time. Lessons, videos and quizzes will become available after your instructor approves your account.</p>
         <div className="button-row">
           <Link href="/account" className="button">Manage profile</Link>
+          <Link href="/notifications" className="button">Notifications</Link>
           <Link href="/dashboard" className="button primary">Check approval status</Link>
           <SignOut />
         </div>

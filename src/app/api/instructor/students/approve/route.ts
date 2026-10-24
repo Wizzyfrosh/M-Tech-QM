@@ -1,3 +1,7 @@
+export const maxDuration = 60;
+import { after } from "next/server";
+import { deliverNotifications } from "@/lib/notifications";
+import { notifyAccess } from "@/lib/notifications";
 import { requireInstructor } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { assertOrigin, failure, json, readJson } from "@/lib/http";
@@ -8,6 +12,7 @@ export async function POST(request: Request) {
   try {
     assertOrigin(request);
     const actor = await requireInstructor(request.headers);
+    after(()=>deliverNotifications(getDb()));
     const { ids } = await readJson(request, bulkApprovalSchema);
     const result = await getDb().$transaction(async tx => {
       // Optimistically select only verified pending students and verify the
@@ -28,6 +33,7 @@ export async function POST(request: Request) {
           data: eligible.map(id => ({ actorId: actor.id, action: "STUDENT_APPROVED", entityId: id })),
         });
       }
+      for(const row of await tx.rosterEntry.findMany({where:{id:{in:eligible}}})) await notifyAccess(tx,row);
       return { approved: eligible.length, skipped: ids.length - eligible.length };
     }, { timeout: 20000 });
     return json(result);

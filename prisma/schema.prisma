@@ -35,6 +35,7 @@ model User {
   quizzes           Quiz[]
   attempts          Attempt[]
   aiGenerations     AiGeneration[]
+  notifications     Notification[]
 }
 
 model Session {
@@ -278,4 +279,21 @@ model AiGeneration {
 
   @@index([instructorId, createdAt])
   @@index([quizId, createdAt])
+}
+
+model Notification {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventKey String
+  kind String
+  title String
+  message String
+  href String
+  readAt DateTime?
+  emailStatus String @default("PENDING")
+  createdAt DateTime @default(now())
+  @@unique([userId, eventKey])
+  @@index([userId, createdAt])
+  @@index([emailStatus, createdAt])
 }

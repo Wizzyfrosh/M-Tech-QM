@@ -1,3 +1,4 @@
+vi.mock("next/server",()=>({after:()=>{}}));
 import { applyTestMigrations } from "../scripts/test-migrations";
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -479,4 +480,10 @@ describe("foundation authorization and account flow", () => {
       }),
     ).rejects.toThrow();
   });
+});
+
+it("requires a session and same-origin writes for notification access",async()=>{
+ const {GET,PATCH}=await import("../src/app/api/notifications/route");
+ expect((await GET(request("/api/notifications"))).status).toBe(401);
+ expect((await PATCH(request("/api/notifications",{},instructorCookie,"https://untrusted.example"))).status).toBe(403);
 });

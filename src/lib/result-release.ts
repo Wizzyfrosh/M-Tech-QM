@@ -1,3 +1,4 @@
+import { notify } from "./notifications";
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { AccessError } from "./access";
@@ -14,7 +15,8 @@ export async function releaseResults(db: PrismaClient, ownerId: string, quizId: 
       throw new AccessError(409, "Close the quiz before reviewing and releasing its results.");
     const attempts = await tx.attempt.findMany({ where: { quizId, status: "SUBMITTED",
       user: { role: "STUDENT", emailVerified: true, roster: { status: "ACTIVE" } } },
-      select: { id: true, earnedMarks: true, maxMarks: true, user: { select: { email: true } } }, orderBy: { id: "asc" } });
+      select: { id: true, userId:true, earnedMarks: true, maxMarks: true, user: { select: { email: true } } }, orderBy: { id: "asc" } });
+    await notify(tx,attempts.map(a=>({userId:a.userId,eventKey:`results:${quizId}`,kind:"RESULTS_RELEASED",title:"Your quiz result is ready",message:`Your instructor released the results for ${quiz.title}. Open the app to see your score and answer review.`,href:`/attempts/${a.id}/result`,emailStatus:"SKIPPED"})));
     const recipients = attempts.map(a => ({ email: a.user.email, attemptId: a.id,
       title: quiz.title, earnedMarks: a.earnedMarks, maxMarks: a.maxMarks }));
     for (let offset = 0; offset < recipients.length; offset += 1000)

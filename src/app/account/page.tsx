@@ -13,6 +13,9 @@ export default async function Account() {
           <p>Your profile, privacy and security preferences.</p>
         </div>
       </div>
+      <section className="profile-identity panel"><span className="profile-monogram">{actor.name.slice(0,1).toUpperCase()}</span>
+        <div><h2>{actor.name}</h2><p>{actor.email}</p><span className="badge lavender">{actor.role === "INSTRUCTOR" ? "Instructor" : "Student"}</span></div>
+      </section>
       <AccountForm
         name={actor.name}
         email={actor.email}

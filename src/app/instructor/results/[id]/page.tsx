@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { AccessError, pageActor } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { instructorQuizReport } from "@/lib/reports";
+import { ReleaseResults } from "@/components/release-results";
 export const dynamic = "force-dynamic";
 export default async function ReportDetailPage({
   params, searchParams,
@@ -22,6 +23,7 @@ export default async function ReportDetailPage({
     { name: "Still in progress", value: data.inProgress, icon: Clock3 },
     { name: "Average score", value: data.averagePercent === null ? "—" : `${data.averagePercent}%`, icon: Target },
   ];
+  const notifications = await getDb().resultEmailBatch.groupBy({ by: ["status"], where: { quizId: id }, _count: true });
   return <AppShell name={actor.name} role={actor.role} active="results">
     <Link href="/instructor/results" className="back-link"><ArrowLeft size={16}/> All results</Link>
     <div className="page-heading"><div><span className="eyebrow">QUIZ PERFORMANCE</span>
@@ -31,6 +33,12 @@ export default async function ReportDetailPage({
       <div><span>{item.name}</span><strong>{item.value}</strong><small>Recorded assessment data</small></div>
       <span className="stat-icon"><item.icon size={21}/></span></section>)}</div>
     <p className="notice">Participation is based on students who started this quiz. Active students are the verified, active roster—not proof they received the quiz link.</p>
+    <ReleaseResults id={id} released={!!data.quiz.reviewReleasedAt}/>
+    {!!notifications.length && <section className="panel"><h2>Result notification status</h2>
+      <p>Each batch contains up to 1,000 individual emails. Accepted means the provider accepted the request; inbox delivery can vary.</p>
+      {notifications.map(batch => <p key={batch.status}>{batch.status === "SENT" ? "Accepted" : batch.status === "UNKNOWN" ? "Unconfirmed — check Brevo logs before resending" : batch.status}: {batch._count} batch(es)</p>)}
+      <Link className="button" href={`/instructor/results/${id}`}>Refresh delivery status</Link>
+    </section>}
     <section className="panel"><div className="panel-heading"><div><h2>Question performance</h2>
       <p>Correct submissions divided by all submitted attempts; skipped answers count as incorrect.</p></div></div>
       {data.questions.length ? <div className="report-metrics">{data.questions.map((q,i) =>

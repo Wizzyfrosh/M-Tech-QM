@@ -51,6 +51,7 @@ export function StudentApprovals() {
     finally{setBusy(false);}
   }
   async function update(entry:Entry){
+    if (entry.status === "ACTIVE" && !window.confirm(`Remove app access for ${entry.name}? They will be signed out immediately. Their assessment records will be preserved.`)) return;
     setBusy(true);setError("");setNotice("");
     try {
       const next:Status=entry.status==="ACTIVE"?"SUSPENDED":"ACTIVE";
@@ -60,7 +61,7 @@ export function StudentApprovals() {
       });
       const body=await response.json();
       if(!response.ok)throw new Error(body.error || "Could not update access");
-      setNotice(next==="ACTIVE"?"Student approved.":"Student access suspended.");
+      setNotice(next==="ACTIVE"?"Student approved.":"Student access removed. Existing sessions have been revoked.");
       refresh();
     }catch(e){setError(e instanceof Error?e.message:"Update failed.");}
     finally{setBusy(false);}
@@ -110,7 +111,7 @@ export function StudentApprovals() {
           <td><span className={`badge ${entry.status==="ACTIVE"?"green":"amber"}`}>{entry.status==="PENDING"?"Waiting":entry.status==="ACTIVE"?"Approved":"Suspended"}</span></td>
           <td>{entry.status==="PENDING"?<button className="button small primary" disabled={busy||!entry.user?.emailVerified}
             onClick={()=>approve([entry.id])}>Approve</button>:<button className="button small"
-            disabled={busy} onClick={()=>update(entry)}>{entry.status==="ACTIVE"?"Suspend":"Restore"}</button>}</td>
+            disabled={busy} onClick={()=>update(entry)}>{entry.status==="ACTIVE"?"Remove access":"Restore access"}</button>}</td>
         </tr>)}</tbody></table></div>
         <div className="approval-mobile-list" aria-label="Students">
           {entries.map(entry => <article key={entry.id} className="approval-student-card">
@@ -141,7 +142,7 @@ export function StudentApprovals() {
                     disabled={busy||!entry.user?.emailVerified}
                     onClick={()=>approve([entry.id])}>Approve</button>
                 : <button type="button" className="button small" disabled={busy}
-                    onClick={()=>update(entry)}>{entry.status==="ACTIVE"?"Suspend":"Restore"}</button>}
+                    onClick={()=>update(entry)}>{entry.status==="ACTIVE"?"Remove access":"Restore access"}</button>}
             </div>
           </article>)}
         </div></>:

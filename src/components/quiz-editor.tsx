@@ -561,7 +561,8 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
               <label>
                 Answer review
                 <select
-                  value={draft.reviewMode}
+                  value="INSTRUCTOR_RELEASE"
+                  disabled
                   onChange={(e) =>
                     change(
                       "reviewMode",
@@ -569,13 +570,11 @@ export function QuizEditor({ initial }: { initial: EditorQuiz }) {
                     )
                   }
                 >
-                  <option value="AFTER_CLOSE">After the quiz closes</option>
-                  <option value="AFTER_SUBMISSION">After submission</option>
                   <option value="INSTRUCTOR_RELEASE">When I release it</option>
                 </select>
                 <small>
-                  Students will see their score immediately. This controls when
-                  correct answers are revealed.
+                  Scores and correct answers remain hidden until you close the quiz,
+                  review submissions and release results from the quiz report.
                 </small>
               </label>
               <label className="checkbox-label">

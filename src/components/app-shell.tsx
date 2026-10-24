@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Brand } from "./brand";
 import { SignOut } from "./sign-out";
-import { ThemeToggle } from "./theme-toggle";
+import { NavigationFeedback } from "./navigation-feedback";
 export function AppShell({
   name,
   role,
@@ -67,6 +67,7 @@ export function AppShell({
             >
               <item.icon size={19} />
               {item.label}
+              <NavigationFeedback/>
             </Link>
           ))}
         </nav>
@@ -96,7 +97,6 @@ export function AppShell({
           <span className="topbar-label">Your community. Your progress.</span>
           <div className="topbar-actions">
           <Link href="/install" className="button install-link"><Download size={16}/><span>Install app</span></Link>
-          <ThemeToggle />
           <span className="role-pill">
             <span className="status-dot" />
             {role === "INSTRUCTOR"

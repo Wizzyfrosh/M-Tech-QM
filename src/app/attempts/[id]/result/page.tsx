@@ -17,9 +17,9 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
     <div className="page-heading"><div><span className="eyebrow">YOUR OFFICIAL RESULT</span><h1>{result.quizTitle}</h1>
       <p>Submitted {new Date(result.submittedAt!).toLocaleString("en-NG",{timeZone:"Africa/Lagos"})} WAT</p></div></div>
     <section className="panel result-hero"><CheckCircle2 size={34}/><h2>Submission recorded</h2>
-      <strong className="result-score">{result.earnedMarks} / {result.maxMarks}</strong>
-      <p>{result.maxMarks ? Math.round(100*result.earnedMarks!/result.maxMarks) : 0}% of available marks</p></section>
-    {!result.reviewAvailable ? <section className="panel notice"><LockKeyhole size={18}/> Answer review will become available according to your instructor&apos;s release policy. Your score is already final.</section>
+      {result.reviewAvailable && <><strong className="result-score">{result.earnedMarks} / {result.maxMarks}</strong>
+      <p>{result.maxMarks ? Math.round(100*result.earnedMarks!/result.maxMarks) : 0}% of available marks</p></>}</section>
+    {!result.reviewAvailable ? <section className="panel notice"><LockKeyhole size={18}/> Your submission is awaiting instructor review. Your score and answer review will appear after your instructor releases the results.</section>
     : <div className="preview-questions">{result.questions?.map((q,i) => <section className="panel" key={q.id}>
       <div className="panel-heading"><h2>Question {i+1}</h2><span className="badge lavender">{q.awardedMarks}/{q.marks} marks</span></div>
       <p className="question-prompt">{q.prompt}</p>

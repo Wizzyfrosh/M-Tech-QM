@@ -8,6 +8,7 @@ import { applyTestMigrations } from "../scripts/test-migrations";
 import { createQuiz, actOnQuiz, getQuizEditor } from "../src/lib/quizzes";
 import { blankQuiz } from "../src/lib/quiz-policy";
 import { startAttempt, getAttempt, saveAnswers, submitAttempt, attemptResult, studentHistory } from "../src/lib/attempts";
+import { releaseResults, deliverResultEmails } from "../src/lib/result-release";
 
 let db: PrismaClient;
 let lite: PGlite | undefined;
@@ -103,15 +104,40 @@ describe("official assessment lifecycle", () => {
     expect(JSON.stringify(hidden)).not.toContain("Const prevents rebinding");
     const history = await studentHistory(db, student, "STUDENT", 1);
     expect(history.total).toBe(1);
-    expect(history.attempts[0].earnedMarks).toBe(3);
+    expect(history.attempts[0].earnedMarks).toBeNull();
+    expect(hidden.earnedMarks).toBeNull();
+    await expect(releaseResults(db, owner, quizId)).rejects.toMatchObject({ status: 409 });
     await expect(attemptResult(db, id, otherStudent, "STUDENT")).rejects.toMatchObject({ status: 404 });
   });
   it("rejects fresh attempts after closure but keeps the submitted grade", async () => {
+    for (const status of ["PENDING", "SUSPENDED"] as const) {
+      const id = crypto.randomUUID();
+      const email = `${id}@example.test`;
+      await db.user.create({ data: { id, email, name: "Excluded recipient", role: "STUDENT", emailVerified: true } });
+      await db.rosterEntry.create({ data: { userId: id, name: "Excluded", normalizedEmail: email, status: "ACTIVE" } });
+      const started = await startAttempt(db, id, "STUDENT", slug);
+      await submitAttempt(db, started.id, id, "STUDENT", 0, []);
+      await db.rosterEntry.update({ where: { userId: id }, data: { status } });
+    }
     const current = await db.quiz.findUniqueOrThrow({ where: { id: quizId } });
     await actOnQuiz(db, owner, quizId, current.revision, "close");
     await expect(startAttempt(db, otherStudent, "STUDENT", slug)).rejects.toMatchObject({ status: 409 });
     const existing = await startAttempt(db, student, "STUDENT", slug);
     expect(existing.status).toBe("SUBMITTED");
+    expect((await attemptResult(db, existing.id, student, "STUDENT")).reviewAvailable).toBe(false);
+    await expect(releaseResults(db, student, quizId)).rejects.toMatchObject({ status: 404 });
+    await releaseResults(db, owner, quizId);
+    await releaseResults(db, owner, quizId);
+    expect(await db.resultEmailBatch.count({ where: { quizId } })).toBe(1);
+    const queued = await db.resultEmailBatch.findFirstOrThrow({ where: { quizId } });
+    expect(queued.recipients).toHaveLength(1);
+    const previousTransport = process.env.MAIL_TRANSPORT;
+    process.env.MAIL_TRANSPORT = "file";
+    try {
+      await deliverResultEmails(db, quizId);
+      await deliverResultEmails(db, quizId);
+      expect((await db.resultEmailBatch.findUniqueOrThrow({ where: { id: queued.id } })).status).toBe("SENT");
+    } finally { if (previousTransport === undefined) delete process.env.MAIL_TRANSPORT; else process.env.MAIL_TRANSPORT = previousTransport; }
     const disclosed = await attemptResult(db, existing.id, student, "STUDENT");
     expect(disclosed.reviewAvailable).toBe(true);
     expect(disclosed.questions?.[0].correctOptionId).toBe(firstOption);

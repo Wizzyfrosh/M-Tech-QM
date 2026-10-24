@@ -72,7 +72,7 @@ export const blankQuiz = (): QuizDraft => ({
   lessonUrl: "",
   lessonUrls: [],
   deadline: null,
-  reviewMode: "AFTER_CLOSE",
+  reviewMode: "INSTRUCTOR_RELEASE",
   leaderboardEnabled: true,
   questions: [],
 });

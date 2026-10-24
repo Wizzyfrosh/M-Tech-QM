@@ -8,6 +8,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     assertOrigin(request);
     const actor = await getActor(request.headers);
     const { revision, answers } = await readJson(request, attemptChangeSchema);
-    return json(await submitAttempt(getDb(), (await context.params).id, actor.id, actor.role, revision, answers));
+    const result = await submitAttempt(getDb(), (await context.params).id, actor.id, actor.role, revision, answers);
+    return json({ id: result.id, status: result.status });
   } catch (error) { return failure(error); }
 }

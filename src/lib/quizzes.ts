@@ -191,16 +191,19 @@ export async function actOnQuiz(
   id: string,
   revision: number,
   action: QuizAction,
+  confirmTitle?: string,
 ) {
   return db.$transaction(
     async (tx) => {
       const { quiz, now } = await lockQuiz(tx, id, actorId, revision);
       if (action === "delete") {
-        if (quiz.status !== "DRAFT")
-          throw new AccessError(
-            409,
-            "Only drafts can be deleted. Archive a published quiz.",
-          );
+        if (quiz.status !== "DRAFT" && confirmTitle !== quiz.title)
+          throw new AccessError(409,"Type the exact quiz title to permanently delete its questions, attempts and results.");
+        await tx.$queryRaw`SELECT set_config('qms.deleting_quiz', ${id}, true)`;
+        await tx.notification.deleteMany({where:{OR:[{eventKey:`published:${id}`},{eventKey:`results:${id}`}]}});
+        await tx.resultEmailBatch.deleteMany({where:{quizId:id}});
+        await tx.attemptAnswer.deleteMany({where:{quizId:id}});
+        await tx.attempt.deleteMany({where:{quizId:id}});
         await tx.quiz.delete({ where: { id } });
         await tx.auditEvent.create({
           data: { actorId, action: "QUIZ_DELETED", entityId: id },

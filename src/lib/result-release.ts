@@ -4,13 +4,18 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { AccessError } from "./access";
 import { effectivelyClosed } from "./quiz-policy";
 
-export async function releaseResults(db: PrismaClient, ownerId: string, quizId: string) {
+export async function releaseResults(db: PrismaClient, ownerId: string, quizId: string, closeQuiz = false) {
   return db.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Quiz" WHERE id=${quizId} FOR UPDATE`;
     const quiz = await tx.quiz.findFirst({ where: { id: quizId, createdBy: ownerId } });
     if (!quiz) throw new AccessError(404, "Quiz not found.");
     if (quiz.reviewReleasedAt) return { released: true, alreadyReleased: true };
     const clock = await tx.$queryRaw<{now:Date}[]>`SELECT clock_timestamp() AS now`;
+    if (quiz.status === "PUBLISHED" && !effectivelyClosed(quiz, clock[0].now) && closeQuiz) {
+      await tx.quiz.update({where:{id:quizId},data:{status:"CLOSED",closedAt:clock[0].now}});
+      quiz.status="CLOSED";
+      await tx.auditEvent.create({data:{actorId:ownerId,action:"QUIZ_CLOSED",entityId:quizId}});
+    }
     if (quiz.status === "DRAFT" || !effectivelyClosed(quiz, clock[0].now))
       throw new AccessError(409, "Close the quiz before reviewing and releasing its results.");
     const attempts = await tx.attempt.findMany({ where: { quizId, status: "SUBMITTED",

@@ -168,7 +168,7 @@ export function Roster() {
             role="region"
             aria-label="Confirm student access change"
           >
-            <strong>Suspend access for {target.name}?</strong>
+            <strong>Remove app access for {target.name}?</strong>
             <p>
               They will be signed out and unable to access the workspace. Their
               records will be kept.
@@ -179,7 +179,7 @@ export function Roster() {
                 disabled={busy || !hydrated}
                 onClick={() => change(target)}
               >
-                Suspend access
+                Remove access
               </button>
               <button
                 className="button"
@@ -254,7 +254,7 @@ export function Roster() {
                               : change(entry)
                           }
                         >
-                          {entry.status === "ACTIVE" ? "Suspend" : "Restore"}
+                          {entry.status === "ACTIVE" ? "Remove access" : "Restore access"}
                         </button>
                       </td>
                     </tr>

@@ -8,7 +8,7 @@ export async function ownedReportQuiz(db: PrismaClient, id: string, ownerId: str
   const quiz = await db.quiz.findFirst({
     where: { id, createdBy: ownerId },
     select: { id: true, title: true, lessonLabel: true, shareSlug: true,
-      status: true, deadline: true, leaderboardEnabled: true },
+      status: true, deadline: true, leaderboardEnabled: true, reviewReleasedAt: true },
   });
   if (!quiz) throw new AccessError(404, "Quiz not found.");
   return quiz;
@@ -67,11 +67,12 @@ export async function quizLeaderboard(
   const quiz = await db.quiz.findUnique({
     where: { shareSlug: slug },
     select: { id: true, title: true, lessonLabel: true, status: true,
-      deadline: true, leaderboardEnabled: true, createdBy: true },
+      deadline: true, leaderboardEnabled: true, createdBy: true, reviewReleasedAt: true },
   });
   if (!quiz || quiz.status === "DRAFT" || (actor.role === "INSTRUCTOR" && quiz.createdBy !== actor.id))
     throw new AccessError(404, "Leaderboard not available.");
   if (!quiz.leaderboardEnabled) throw new AccessError(404, "Leaderboard disabled.");
+  if (actor.role === "STUDENT" && !quiz.reviewReleasedAt) throw new AccessError(409, "Results are awaiting instructor release.");
   if (!effectivelyClosed(quiz)) throw new AccessError(409, "Leaderboard opens when the quiz closes.");
   if (actor.role === "STUDENT") {
     const own = await db.attempt.findUnique({

@@ -146,7 +146,7 @@ model Quiz {
   deadline           DateTime?
   status             QuizStatus @default(DRAFT)
   revision           Int        @default(0)
-  reviewMode         ReviewMode @default(AFTER_CLOSE)
+  reviewMode         ReviewMode @default(INSTRUCTOR_RELEASE)
   leaderboardEnabled Boolean    @default(true)
   reviewReleasedAt   DateTime?
   publishedAt        DateTime?
@@ -159,6 +159,7 @@ model Quiz {
   questions          Question[]
   attempts           Attempt[]
   aiGenerations      AiGeneration[]
+  resultEmails       ResultEmailBatch[]
 
   @@index([status, createdAt])
   @@index([createdBy, createdAt])
@@ -203,6 +204,17 @@ model AnswerKey {
 enum AttemptStatus {
   IN_PROGRESS
   SUBMITTED
+}
+
+model ResultEmailBatch {
+  id         String @id @default(uuid())
+  quizId     String
+  quiz       Quiz @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  recipients Json
+  status     String @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([quizId])
 }
 
 model Attempt {

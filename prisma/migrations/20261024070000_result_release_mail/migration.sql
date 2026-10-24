@@ -1,0 +1,11 @@
+ALTER TABLE "Quiz" ALTER COLUMN "reviewMode" SET DEFAULT 'INSTRUCTOR_RELEASE';
+CREATE TABLE "ResultEmailBatch" (
+  "id" TEXT PRIMARY KEY,
+  "quizId" TEXT NOT NULL REFERENCES "Quiz"("id") ON DELETE RESTRICT,
+  "recipients" JSONB NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'PENDING',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ResultEmailBatch_status_check" CHECK ("status" IN ('PENDING','SENDING','SENT','FAILED','UNKNOWN'))
+);
+CREATE INDEX "ResultEmailBatch_quizId_idx" ON "ResultEmailBatch"("quizId");

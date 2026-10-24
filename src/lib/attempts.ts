@@ -152,13 +152,10 @@ export async function attemptResult(db: PrismaClient, id: string, userId: string
     include: { quiz: true, answers: { select: { questionId: true, selectedOptionId: true, awardedMarks: true } } },
   });
   if (!attempt || attempt.status !== "SUBMITTED") throw new AccessError(404, "Submitted result not found.");
-  const reviewAvailable =
-    attempt.quiz.reviewMode === "AFTER_SUBMISSION" ||
-    (attempt.quiz.reviewMode === "AFTER_CLOSE" && effectivelyClosed(attempt.quiz)) ||
-    (attempt.quiz.reviewMode === "INSTRUCTOR_RELEASE" && attempt.quiz.reviewReleasedAt !== null);
+  const reviewAvailable = attempt.quiz.reviewReleasedAt !== null;
   const result = {
     id: attempt.id, quizId: attempt.quizId, quizTitle: attempt.quiz.title,
-    shareSlug: attempt.quiz.shareSlug, earnedMarks: attempt.earnedMarks, maxMarks: attempt.maxMarks,
+    shareSlug: attempt.quiz.shareSlug, earnedMarks: reviewAvailable ? attempt.earnedMarks : null, maxMarks: reviewAvailable ? attempt.maxMarks : null,
     submittedAt: attempt.submittedAt, reviewAvailable,
   };
   if (!reviewAvailable) return { ...result, questions: null };
@@ -182,9 +179,10 @@ export async function studentHistory(db: PrismaClient, userId: string, role: str
   const where = { userId, status: "SUBMITTED" as const };
   const [attempts, total] = await db.$transaction([
     db.attempt.findMany({ where, select: { id: true, earnedMarks: true, maxMarks: true,
-      submittedAt: true, quiz: { select: { title: true, shareSlug: true, lessonLabel: true } } },
+      submittedAt: true, quiz: { select: { title: true, shareSlug: true, lessonLabel: true, reviewReleasedAt: true } } },
       orderBy: [{ submittedAt: "desc" }, { id: "desc" }], skip: (page - 1) * 20, take: 20 }),
     db.attempt.count({ where }),
   ]);
-  return { attempts, total, page, pageSize: 20 };
+  return { attempts: attempts.map(a => ({ ...a, earnedMarks: a.quiz.reviewReleasedAt ? a.earnedMarks : null,
+    maxMarks: a.quiz.reviewReleasedAt ? a.maxMarks : null })), total, page, pageSize: 20 };
 }

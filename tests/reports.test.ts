@@ -10,6 +10,7 @@ import { blankQuiz } from "../src/lib/quiz-policy";
 import { startAttempt, submitAttempt } from "../src/lib/attempts";
 import { csvCell, scorePercent } from "../src/lib/report-policy";
 import { instructorQuizReport, instructorResultsCsv, quizLeaderboard, reportList, ownedReportQuiz } from "../src/lib/reports";
+import { releaseResults } from "../src/lib/result-release";
 
 let db: PrismaClient;
 let lite: PGlite | undefined;
@@ -104,6 +105,8 @@ describe("instructor reports, CSV and leaderboard privacy", () => {
     await db.rosterEntry.create({ data: { name: "Other", normalizedEmail: email, userId: outsider, status: "ACTIVE" } });
     const current = await db.quiz.findUniqueOrThrow({ where: { id: quizId } });
     await actOnQuiz(db, instructorId, quizId, current.revision, "close");
+    await expect(quizLeaderboard(db, slug, { id: studentId, role: "STUDENT" })).rejects.toMatchObject({ status: 409 });
+    await releaseResults(db, instructorId, quizId);
     await expect(quizLeaderboard(db, slug, { id: outsider, role: "STUDENT" }))
       .rejects.toMatchObject({ status: 403 });
     const leaderboard = await quizLeaderboard(db, slug, { id: studentId, role: "STUDENT" });

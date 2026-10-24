@@ -63,11 +63,7 @@ export default async function Page({
           <div>
             <dt>Correct-answer review</dt>
             <dd>
-              {quiz.reviewMode === "AFTER_CLOSE"
-                ? "After the quiz closes"
-                : quiz.reviewMode === "AFTER_SUBMISSION"
-                  ? "After submission"
-                  : "When your instructor releases it"}
+              When your instructor reviews and releases the results
             </dd>
           </div>
           <div>

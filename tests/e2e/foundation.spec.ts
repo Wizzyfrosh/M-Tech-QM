@@ -134,7 +134,7 @@ test("student self-registers and verifies; instructor approves and may later sus
   await expect(student.getByRole("button", { name: "Change password", exact: true })).toHaveAttribute("aria-expanded", "true");
   await student.getByRole("button", { name: "Cancel password change", exact: true }).click();
   await expect(student.getByLabel("Current password", { exact: true })).toHaveCount(0);
-  await student.locator(".topbar").getByRole("button", { name: "Switch to dark mode" }).click();
+  await student.locator(".account-appearance").getByRole("button", { name: "Switch to dark mode" }).click();
   await expect(student.locator("html")).toHaveAttribute("data-theme", "dark");
   await student.reload();
   await expect(student.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -150,7 +150,7 @@ test("student self-registers and verifies; instructor approves and may later sus
     path: "test-results/mobile-account-dark.png",
     fullPage: true,
   });
-  await student.locator(".topbar").getByRole("button", { name: "Switch to light mode" }).click();
+  await student.locator(".account-appearance").getByRole("button", { name: "Switch to light mode" }).click();
   await student.getByRole("button", { name: "Sign out", exact: true }).click();
   await student.getByRole("link", { name: "Forgot password?" }).click();
   await expect(
@@ -208,14 +208,15 @@ test("student self-registers and verifies; instructor approves and may later sus
     response.url().includes("/api/instructor/students/") &&
     response.request().method() === "PATCH",
   );
+  page.once("dialog", dialog => dialog.accept());
   await page
     .getByRole("row")
     .filter({ hasText: "browser@example.test" })
-    .getByRole("button", { name: "Suspend", exact: true })
+    .getByRole("button", { name: "Remove access", exact: true })
     .click();
 
   expect((await suspensionResponse).status()).toBe(200);
-  await expect(page.getByRole("status").filter({ hasText: "Student access suspended." })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Student access removed." })).toBeVisible();
   await expect(page.locator(".approval-desktop").getByText("browser@example.test", { exact: true })).toHaveCount(0);
   expect((await context.request.get("/api/quizzes")).status()).toBe(401);
   await student.reload();
@@ -247,7 +248,7 @@ test("all account pages render at 360px without horizontal overflow", async ({
     ).toBe(true);
   }
   await page.goto("/sign-in");
-  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await page.evaluate(() => localStorage.setItem("qms-theme-v1", "dark"));
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.reload();
@@ -256,7 +257,8 @@ test("all account pages render at 360px without horizontal overflow", async ({
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: "test-results/mobile-sign-in-dark.png", fullPage: true });
-  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await page.evaluate(() => localStorage.setItem("qms-theme-v1", "light"));
+  await page.reload();
   await page.screenshot({
     path: "test-results/mobile-sign-in.png",
     fullPage: true,

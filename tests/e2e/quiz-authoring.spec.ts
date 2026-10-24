@@ -31,7 +31,6 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     page.getByRole("heading", { name: "Untitled quiz", exact: true }),
   ).toBeVisible();
   const editorUrl = page.url();
-  await page.locator(".topbar").getByRole("button", { name: "Switch to dark mode" }).click();
   const id = editorUrl.split("/").at(-1)!;
   await page
     .getByLabel("Quiz title", { exact: true })
@@ -220,7 +219,8 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   student.once("dialog", dialog => dialog.accept());
   await student.getByRole("button", { name: "Submit final answers" }).click();
   await expect(student.getByText("Submission recorded", { exact: true })).toBeVisible();
-  await expect(student.getByText("3 / 3", { exact: true })).toBeVisible();
+  await expect(student.getByText("3 / 3", { exact: true })).not.toBeVisible();
+  await expect(student.getByText(/Your submission is awaiting instructor review/)).toBeVisible();
   expect(await student.content()).not.toContain("PRIVATE_EXPLANATION");
   await page.getByRole("button", { name: "Close quiz", exact: true }).click();
   await page
@@ -230,6 +230,11 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await page.goto(`/instructor/results/${id}`);
   await expect(page.getByRole("heading", { name: "JavaScript foundations" })).toBeVisible();
   await expect(page.getByText("quiz-student@example.test")).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Release results", exact: true }).click();
+  await expect(page.getByText(/Results released. Email notifications/)).toBeVisible();
+  await student.reload();
+  await expect(student.getByText("3 / 3", { exact: true })).toBeVisible();
   const exportResponse = await page.request.get(`/api/instructor/results/${id}/export`);
   expect(exportResponse.status()).toBe(200);
   expect(exportResponse.headers()["content-type"]).toContain("text/csv");

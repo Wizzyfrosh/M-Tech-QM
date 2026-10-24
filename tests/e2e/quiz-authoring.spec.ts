@@ -231,8 +231,10 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await expect(page.getByRole("heading", { name: "JavaScript foundations" })).toBeVisible();
   await expect(page.getByText("quiz-student@example.test")).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
+  const releaseResponse = page.waitForResponse(response => response.url().endsWith(`/api/instructor/results/${id}/release`) && response.request().method() === "POST");
   await page.getByRole("button", { name: "Release results", exact: true }).click();
-  await expect(page.getByText(/Results released. Email notifications/)).toBeVisible();
+  expect((await releaseResponse).status()).toBe(200);
+  await expect(page.getByText("Students can now view their scores and full reviews.")).toBeVisible();
   await student.reload();
   await expect(student.getByText("3 / 3", { exact: true })).toBeVisible();
   const exportResponse = await page.request.get(`/api/instructor/results/${id}/export`);

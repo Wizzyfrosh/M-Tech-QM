@@ -86,7 +86,7 @@ async function readLimitedJson(response: Response): Promise<ProviderPayload> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as ProviderPayload;
 }
 
-async function requestGemini(
+export async function requestGemini(
   transcript: string, count: number, difficulty: string, key: string,
   fetcher: typeof fetch,
 ): Promise<{ questions: GeneratedQuestion[]; inputTokens: number | null; outputTokens: number | null; model: string }> {

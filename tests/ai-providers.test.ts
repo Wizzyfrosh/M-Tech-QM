@@ -12,9 +12,14 @@ const question = {
   sourceExcerpt: "JavaScript const defines a binding that cannot be reassigned.",
 };
 
-afterEach(()=>{delete process.env.OPENROUTER_API_KEY;delete process.env.XAI_API_KEY;});
+afterEach(()=>{delete process.env.OPENROUTER_API_KEY;delete process.env.XAI_API_KEY;delete process.env.GEMINI_MODEL;});
 
 describe("chat-completion providers",()=>{
+ it("uses the supported Gemini default and respects server model overrides",()=>{
+   expect(aiProviderConfig("gemini").model).toBe("gemini-3.5-flash-lite");
+   process.env.GEMINI_MODEL="gemini-3.1-flash-lite";
+   expect(aiProviderConfig("gemini").endpoint).toContain("/gemini-3.1-flash-lite:generateContent");
+ });
  it("never calls the provider when no key is configured",async ()=>{
    let called=false;
    await expect(fromChatCompletions("openrouter",transcript,1,"beginner",
@@ -50,5 +55,22 @@ describe("chat-completion providers",()=>{
    expect(response.status).toBe(503);
    expect(String(response.message)).not.toContain("private billing data");
    expect(String(response.message)).not.toContain("secret-do-not-log");
+ });
+ it.each(["TimeoutError", "AbortError", "TypeError"])("makes %s recoverable for automatic fallback", async name => {
+   process.env.OPENROUTER_API_KEY="fake";
+   const error = new Error("private provider details"); error.name = name;
+   await expect(fromChatCompletions("openrouter",transcript,1,"beginner",
+     (async()=>{throw error;}) as typeof fetch)).rejects.toMatchObject({status:503});
+ });
+ it("handles timeouts while consuming a response, not just waiting for headers", async () => {
+   process.env.OPENROUTER_API_KEY="fake";
+   const body = new ReadableStream({start(controller){controller.error(new DOMException("private", "TimeoutError"));}});
+   await expect(fromChatCompletions("openrouter",transcript,1,"beginner",
+     (async()=>new Response(body)) as typeof fetch)).rejects.toMatchObject({status:503,code:"TIMEOUT"});
+ });
+ it.each([[401,"AUTH"],[402,"CREDITS"],[429,"QUOTA"],[404,"MODEL"]])("distinguishes HTTP %s without exposing provider bodies", async (status, code) => {
+   process.env.OPENROUTER_API_KEY="fake";
+   await expect(fromChatCompletions("openrouter",transcript,1,"beginner",
+     (async()=>new Response("private billing data",{status:Number(status)})) as typeof fetch)).rejects.toMatchObject({status:503,code});
  });
 });

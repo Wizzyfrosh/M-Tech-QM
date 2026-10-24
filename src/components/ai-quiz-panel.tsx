@@ -33,7 +33,9 @@ export function AiQuizPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript, count: Math.min(count, countLimit), difficulty, provider }),
       });
-      const body = await response.json();
+      const body = await response.json().catch(() => {
+        throw new Error("The generation service did not finish. Your notes are still here. Try fewer questions or another provider.");
+      });
       if (!response.ok) throw new Error(body.error || "Could not generate questions.");
       const questions = body.questions as GeneratedQuestion[];
       setGenerated(questions);
@@ -108,7 +110,8 @@ export function AiQuizPanel({
         {loading ? <LoaderCircle className="spin" size={17}/> : <Sparkles size={17}/>}
         {loading ? "Generating suggestions…" : "Generate draft questions"}
       </button>
-      <small className="muted">Up to 10 generation requests per instructor per UTC day. Model availability and pricing depend on your Gemini account.</small>
+      <small className="muted">Up to 10 generation requests per instructor per UTC day. Failed requests also count. Availability and pricing depend on the selected provider account.</small>
+      {loading && <p className="muted" role="status">Generating and checking your questions. Automatic fallback can take up to two minutes. Keep this page open.</p>}
     </form>
     {!!generated.length && <div className="ai-generated-review">
       <div className="panel-heading"><div><h3>Suggestions to review</h3>

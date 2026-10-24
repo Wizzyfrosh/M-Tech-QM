@@ -116,12 +116,11 @@ export async function uploadAssignmentFile(
             409,
             "This upload identifier cannot be reused for a different file. Select the file again.",
           );
-        if (old.state === "PENDING")
-          return tx.assignmentFile.update({
-            where: { id },
-            data: { updatedAt: new Date() },
-          });
-        return old;
+        // A recovered READY upload is active again, so cleanup must not retire it.
+        return tx.assignmentFile.update({
+          where: { id },
+          data: { updatedAt: new Date() },
+        });
       }
       // Reservations count even when delivery is ambiguous, bounding storage growth.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(620244, 1)::text AS "locked"`;

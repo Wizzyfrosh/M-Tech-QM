@@ -779,16 +779,41 @@ describe("private assignment files", () => {
       zipBytes,
       memoryStore,
     );
+    const recovered = await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      crypto.randomUUID(),
+      "recovered.zip",
+      zipBytes,
+      memoryStore,
+    );
     await writeSubmission(db, pupil, a.id, {
       ...input,
       action: "save",
       attachmentIds: [keep.id],
     });
     await db.assignmentFile.updateMany({
-      where: { id: { in: [keep.id, remove.id] } },
+      where: { id: { in: [keep.id, remove.id, recovered.id] } },
       data: { updatedAt: new Date(Date.now() - 2 * 86400000) },
     });
+    await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      recovered.id,
+      "recovered.zip",
+      zipBytes,
+      memoryStore,
+    );
     await cleanupAssignmentFiles(db, pupil, a.id, memoryStore);
+    expect(
+      (
+        await db.assignmentFile.findUniqueOrThrow({
+          where: { id: recovered.id },
+        })
+      ).state,
+    ).toBe("READY");
     expect(
       (await db.assignmentFile.findUniqueOrThrow({ where: { id: keep.id } }))
         .state,

@@ -108,6 +108,21 @@ test("standalone Flutter assignment submits, requests corrections, grades privat
   await student
     .getByLabel(/Evidence links/)
     .fill("https://example.test/recording");
+  const pdfBytes = Buffer.from(
+    "%PDF-1.4\n% Synthetic assignment evidence\n%%EOF",
+  );
+  await student
+    .getByLabel("Assignment file", { exact: true })
+    .setInputFiles({
+      name: "flutter-evidence.pdf",
+      mimeType: "application/pdf",
+      buffer: pdfBytes,
+    });
+  await expect(
+    student.getByRole("button", {
+      name: "Remove flutter-evidence.pdf from draft",
+    }),
+  ).toBeVisible();
   await student
     .getByRole("button", { name: "Save draft", exact: true })
     .click();
@@ -117,6 +132,16 @@ test("standalone Flutter assignment submits, requests corrections, grades privat
       { exact: true },
     ),
   ).toBeVisible();
+  const draftWithFile = await (
+    await context.request.get(`http://127.0.0.1:3100/api/assignments/${id}`)
+  ).json();
+  expect(
+    (
+      await page.request.get(
+        `/api/assignment-files/${draftWithFile.submission.files[0].id}`,
+      )
+    ).status(),
+  ).toBe(404);
   await student.reload();
   await expect(
     student.getByLabel("Explain your work", { exact: true }),
@@ -137,6 +162,19 @@ test("standalone Flutter assignment submits, requests corrections, grades privat
     await context.request.get(`http://127.0.0.1:3100/api/assignments/${id}`)
   ).json();
   const sid = submitted.submission.id;
+  const fileId = submitted.submission.files[0].id;
+  const downloaded = await context.request.get(
+    `http://127.0.0.1:3100/api/assignment-files/${fileId}`,
+  );
+  expect(downloaded.status()).toBe(200);
+  expect(downloaded.headers()["content-type"]).toBe("application/octet-stream");
+  expect(downloaded.headers()["content-disposition"]).toContain("attachment;");
+  expect(downloaded.headers()["cache-control"]).toContain("no-store");
+  expect(await downloaded.body()).toEqual(pdfBytes);
+  expect(
+    (await page.request.get(`/api/assignment-files/${fileId}`)).status(),
+  ).toBe(200);
+
   await page.goto(`/instructor/assignments/${id}/submissions/${sid}`);
   await page
     .getByLabel("Feedback", { exact: true })

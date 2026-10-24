@@ -507,3 +507,348 @@ describe("standalone assignments", () => {
     ).toBe(0);
   });
 });
+
+// File tests use an in-memory object store; no real files or credentials leave the test process.
+import {
+  uploadAssignmentFile,
+  downloadAssignmentFile,
+  cleanupAssignmentFiles,
+  readAssignmentUpload,
+} from "../src/lib/assignment-files";
+import {
+  MAX_ASSIGNMENT_FILE,
+  validFileSignature,
+} from "../src/lib/assignment-file-policy";
+import type { AssignmentFileStore } from "../src/lib/assignment-file-store";
+import { GET as downloadRoute } from "../src/app/api/assignment-files/[fileId]/route";
+import { POST as uploadRoute } from "../src/app/api/assignments/[id]/files/route";
+const objects = new Map<string, Uint8Array>();
+let puts = 0;
+const memoryStore: AssignmentFileStore = {
+  async put(key, bytes) {
+    puts++;
+    objects.set(key, new Uint8Array(bytes));
+  },
+  async get(key) {
+    const value = objects.get(key);
+    if (!value) throw Error("missing");
+    return value;
+  },
+  async remove(key) {
+    objects.delete(key);
+  },
+};
+const zipBytes = new Uint8Array([0x50, 0x4b, 0x05, 0x06, ...Array(18).fill(0)]);
+describe("private assignment files", () => {
+  it("checks actual signatures, names and streamed size rather than trusting request metadata", async () => {
+    expect(validFileSignature("project.zip", zipBytes)).toBe(true);
+    expect(validFileSignature("image.png", zipBytes)).toBe(false);
+    const a = await fresh();
+    for (const name of [
+      "../project.zip",
+      "picture.svg",
+      "project.apk",
+      "header\r\n.zip",
+      "fake.png",
+    ])
+      await expect(
+        uploadAssignmentFile(
+          db,
+          pupil,
+          a.id,
+          crypto.randomUUID(),
+          name,
+          zipBytes,
+          memoryStore,
+        ),
+      ).rejects.toMatchObject({ status: 400 });
+    const request = new Request("http://localhost/upload", {
+      method: "POST",
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-length": "1",
+      },
+      body: new Uint8Array(MAX_ASSIGNMENT_FILE + 1),
+    });
+    await expect(readAssignmentUpload(request)).rejects.toMatchObject({
+      status: 413,
+    });
+    await expect(
+      readAssignmentUpload(
+        new Request("http://localhost", {
+          method: "POST",
+          headers: { "content-type": "text/plain" },
+          body: "hello",
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 415 });
+  });
+  it("keeps unsubmitted files private, deduplicates retries and denies revoked students", async () => {
+    const a = await fresh();
+    const id = crypto.randomUUID();
+    const before = puts;
+    const first = await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      id,
+      "project.zip",
+      zipBytes,
+      memoryStore,
+    );
+    expect(
+      await uploadAssignmentFile(
+        db,
+        pupil,
+        a.id,
+        id,
+        "project.zip",
+        zipBytes,
+        memoryStore,
+      ),
+    ).toEqual(first);
+    expect(puts - before).toBe(1);
+    expect(
+      (await downloadAssignmentFile(db, pupil, id, memoryStore)).bytes,
+    ).toEqual(zipBytes);
+    await expect(
+      downloadAssignmentFile(db, owner, id, memoryStore),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      downloadAssignmentFile(db, other, id, memoryStore),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      uploadAssignmentFile(
+        db,
+        other,
+        a.id,
+        id,
+        "project.zip",
+        zipBytes,
+        memoryStore,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    await expect(
+      uploadAssignmentFile(
+        db,
+        pupil,
+        a.id,
+        id,
+        "changed.zip",
+        zipBytes,
+        memoryStore,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    await db.rosterEntry.update({
+      where: { userId: pupil },
+      data: { status: "SUSPENDED" },
+    });
+    await expect(
+      downloadAssignmentFile(db, pupil, id, memoryStore),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      uploadAssignmentFile(
+        db,
+        pupil,
+        a.id,
+        crypto.randomUUID(),
+        "project.zip",
+        zipBytes,
+        memoryStore,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    await db.rosterEntry.update({
+      where: { userId: pupil },
+      data: { status: "ACTIVE" },
+    });
+  });
+  it("recovers an interrupted provider upload without creating another reservation", async () => {
+    const a = await fresh();
+    const id = crypto.randomUUID();
+    const failed: AssignmentFileStore = {
+      ...memoryStore,
+      async put() {
+        throw Error("ambiguous provider result");
+      },
+    };
+    await expect(
+      uploadAssignmentFile(db, pupil, a.id, id, "retry.zip", zipBytes, failed),
+    ).rejects.toThrow("ambiguous");
+    expect(
+      (await db.assignmentFile.findUniqueOrThrow({ where: { id } })).state,
+    ).toBe("PENDING");
+    const file = await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      id,
+      "retry.zip",
+      zipBytes,
+      memoryStore,
+    );
+    expect(file.id).toBe(id);
+    expect(await db.assignmentFile.count({ where: { id } })).toBe(1);
+  });
+  it("accepts a ZIP instead of GitHub, preserves snapshots and rejects borrowed or pending attachments", async () => {
+    const a = await fresh();
+    const file = await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      crypto.randomUUID(),
+      "flutter.zip",
+      zipBytes,
+      memoryStore,
+    );
+    const otherFile = await uploadAssignmentFile(
+      db,
+      other,
+      a.id,
+      crypto.randomUUID(),
+      "other.zip",
+      zipBytes,
+      memoryStore,
+    );
+    await expect(
+      writeSubmission(db, pupil, a.id, {
+        ...input,
+        action: "save",
+        attachmentIds: [otherFile.id],
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    const work = await writeSubmission(db, pupil, a.id, {
+      ...input,
+      projectUrl: "",
+      action: "submit",
+      attachmentIds: [file.id],
+    });
+    expect(
+      (await instructorSubmission(db, owner, a.id, work.id)).files,
+    ).toEqual([file]);
+    expect(
+      (await downloadAssignmentFile(db, owner, file.id, memoryStore)).bytes,
+    ).toEqual(zipBytes);
+    const edited = await writeSubmission(db, pupil, a.id, {
+      ...input,
+      action: "edit",
+      revision: work.revision,
+    });
+    await writeSubmission(db, pupil, a.id, {
+      ...input,
+      action: "submit",
+      revision: edited.revision,
+      attachmentIds: [],
+    });
+    const detail = await assignmentDetail(db, pupil, a.id, false);
+    expect(detail.versions[1].files.map((f) => f.id)).toEqual([file.id]);
+    expect(detail.versions[0].files).toEqual([]);
+    const b = await fresh();
+    await expect(
+      writeSubmission(db, pupil, b.id, {
+        ...input,
+        action: "submit",
+        attachmentIds: [file.id],
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    const row = await db.assignmentFile.findUniqueOrThrow({
+      where: { id: file.id },
+    });
+    objects.set(row.objectKey, new Uint8Array([1, 2, 3]));
+    await expect(
+      downloadAssignmentFile(db, owner, file.id, memoryStore),
+    ).rejects.toMatchObject({ status: 503 });
+    objects.set(row.objectKey, zipBytes);
+  });
+  it("cleans abandoned uploads while preserving saved drafts and historical files", async () => {
+    const a = await fresh({ submissionType: "TEXT" });
+    const keep = await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      crypto.randomUUID(),
+      "keep.zip",
+      zipBytes,
+      memoryStore,
+    );
+    const remove = await uploadAssignmentFile(
+      db,
+      pupil,
+      a.id,
+      crypto.randomUUID(),
+      "unused.zip",
+      zipBytes,
+      memoryStore,
+    );
+    await writeSubmission(db, pupil, a.id, {
+      ...input,
+      action: "save",
+      attachmentIds: [keep.id],
+    });
+    await db.assignmentFile.updateMany({
+      where: { id: { in: [keep.id, remove.id] } },
+      data: { updatedAt: new Date(Date.now() - 2 * 86400000) },
+    });
+    await cleanupAssignmentFiles(db, pupil, a.id, memoryStore);
+    expect(
+      (await db.assignmentFile.findUniqueOrThrow({ where: { id: keep.id } }))
+        .state,
+    ).toBe("READY");
+    expect(
+      (await db.assignmentFile.findUniqueOrThrow({ where: { id: remove.id } }))
+        .state,
+    ).toBe("DELETED");
+    expect(objects.has(`assignment-files/${keep.id}`)).toBe(true);
+    expect(objects.has(`assignment-files/${remove.id}`)).toBe(false);
+  });
+  it("bounds retained storage and protects upload/download HTTP routes", async () => {
+    const a = await fresh();
+    await db.assignmentFile.createMany({
+      data: Array.from({ length: 10 }, () => {
+        const id = crypto.randomUUID();
+        return {
+          id,
+          assignmentId: a.id,
+          userId: pupil,
+          name: "quota.zip",
+          extension: "zip",
+          size: MAX_ASSIGNMENT_FILE,
+          sha256: "synthetic",
+          objectKey: `assignment-files/${id}`,
+        };
+      }),
+    });
+    await expect(
+      uploadAssignmentFile(
+        db,
+        pupil,
+        a.id,
+        crypto.randomUUID(),
+        "project.zip",
+        zipBytes,
+        memoryStore,
+      ),
+    ).rejects.toMatchObject({ status: 429 });
+    routeActor = "";
+    expect(
+      (
+        await downloadRoute(new Request("http://localhost/file"), {
+          params: Promise.resolve({ fileId: crypto.randomUUID() }),
+        })
+      ).status,
+    ).toBe(401);
+    routeActor = pupil;
+    process.env.BETTER_AUTH_URL = "http://localhost";
+    expect(
+      (
+        await uploadRoute(
+          new Request("http://localhost/upload", {
+            method: "POST",
+            headers: { origin: "https://evil.test" },
+            body: zipBytes,
+          }),
+          { params: Promise.resolve({ id: a.id }) },
+        )
+      ).status,
+    ).toBe(403);
+  });
+});

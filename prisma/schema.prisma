@@ -38,6 +38,7 @@ model User {
   notifications     Notification[]
   assignments       Assignment[]
   assignmentSubmissions AssignmentSubmission[]
+  assignmentFiles AssignmentFile[]
 }
 
 model Session {
@@ -319,6 +320,7 @@ model Assignment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   submissions AssignmentSubmission[]
+  files AssignmentFile[]
   @@index([createdBy, createdAt])
   @@index([status, createdAt])
 }
@@ -334,6 +336,7 @@ model AssignmentSubmission {
   responseText String @default("")
   projectUrl String @default("")
   evidenceUrls String[] @default([])
+  attachmentIds String[] @default([])
   version Int @default(0)
   submittedAt DateTime?
   late Boolean @default(false)
@@ -357,7 +360,26 @@ model AssignmentVersion {
   responseText String
   projectUrl String
   evidenceUrls String[]
+  attachmentIds String[] @default([])
   submittedAt DateTime @default(now())
   late Boolean
   @@unique([submissionId, version])
+}
+
+model AssignmentFile {
+  id String @id
+  assignmentId String
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  name String
+  extension String
+  size Int
+  sha256 String
+  objectKey String @unique
+  state String @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId, assignmentId])
+  @@index([state, createdAt])
 }

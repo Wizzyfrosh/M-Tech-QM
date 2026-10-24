@@ -30,7 +30,7 @@ The instructor setup command generates an undisclosed random initial password an
 
 ## Assignments
 
-Assignments have their own workspace, independent of quizzes. Publish written tasks or Flutter projects, collect text and fixed GitHub commit/evidence links, review versions, request corrections, save private marks and release feedback to approved students. Direct file uploads are deferred. See [the assignment workflow](docs/ASSIGNMENTS.md).
+Assignments have their own workspace, independent of quizzes. Publish written tasks or Flutter projects, collect text and fixed GitHub commit/evidence links, review versions, request corrections, save private marks and release feedback to approved students. Private ZIP, PDF and image uploads are supported (3 MB per file). See [the assignment workflow](docs/ASSIGNMENTS.md).
 
 ## Checks
 

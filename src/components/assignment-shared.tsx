@@ -1,4 +1,8 @@
-import { ExternalLink } from "lucide-react";
+import {
+  fileSize,
+  type AssignmentFileInfo,
+} from "@/lib/assignment-file-policy";
+import { Download, ExternalLink } from "lucide-react";
 import { assignmentDate } from "@/lib/assignment-policy";
 export type Serialized<T> = T extends Date
   ? string
@@ -100,16 +104,36 @@ export function SubmissionEvidence({
   responseText,
   projectUrl,
   evidenceUrls,
+  files = [],
 }: {
   responseText: string;
   projectUrl: string;
   evidenceUrls: string[];
+  files?: AssignmentFileInfo[];
 }) {
   return (
     <>
       <p className="pre-wrap assignment-prose">
         {responseText || "No written response."}
       </p>
+      {!!files.length && (
+        <>
+          <h3>Attached files</h3>
+          <ul className="assignment-file-links">
+            {files.map((file) => (
+              <li key={file.id}>
+                <a href={`/api/assignment-files/${file.id}`} download>
+                  <Download size={16} />
+                  <span>
+                    {file.name}
+                    <small>{fileSize(file.size)}</small>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {projectUrl && (
         <>
           <h3>Submitted code version</h3>

@@ -1,6 +1,8 @@
 import { Brand } from "@/components/brand";
 import { Check, Code2, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
+import { Download } from "lucide-react";
 export default function AuthLayout({
   children,
 }: {
@@ -52,7 +54,7 @@ export default function AuthLayout({
         <p className="aside-foot">Built for the M Tech learning community.</p>
       </aside>
       <main id="main" className="auth-main">
-        <div className="auth-controls"><ThemeToggle /></div>
+        <div className="auth-controls"><Link href="/install" className="button install-link"><Download size={16}/>Install app</Link><ThemeToggle /></div>
         {children}
         <p className="auth-foot">
           A private learning space. Access is managed by your instructor.

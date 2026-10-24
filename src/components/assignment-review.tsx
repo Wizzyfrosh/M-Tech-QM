@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { instructorSubmission } from "@/lib/assignments";
 import { assignmentDate, assignmentStatusLabel } from "@/lib/assignment-policy";
 import {
@@ -25,6 +25,12 @@ export function AssignmentReview({ initial }: { initial: Submission }) {
   const url = `/api/instructor/assignments/${data.assignmentId}/submissions/${data.id}`;
   const canReview =
     !data.releasedAt && ["SUBMITTED", "GRADED"].includes(data.status);
+  useEffect(() => {
+    if (confirm)
+      document
+        .querySelector(".assignment-confirm")
+        ?.scrollIntoView({ block: "nearest" });
+  }, [confirm]);
   async function act(action: "grade" | "request_changes") {
     setBusy(true);
     setError("");
@@ -177,7 +183,7 @@ export function AssignmentReview({ initial }: { initial: Submission }) {
           </>
         )}
         {confirm && (
-          <div className="notice">
+          <div className="notice assignment-confirm">
             <p>
               Send this feedback and allow a new submission? Any unpublished
               grade is cleared. Earlier submitted versions are preserved.

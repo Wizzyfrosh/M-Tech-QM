@@ -49,6 +49,16 @@ test("standalone Flutter assignment submits, requests corrections, grades privat
   await expect(
     page.getByText("Assignment draft saved.", { exact: true }),
   ).toBeVisible();
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectAligned(page);
+  }
+  expect(
+    await page
+      .locator("input[type=checkbox]")
+      .evaluate((el) => el.getBoundingClientRect().width),
+  ).toBeLessThanOrEqual(24);
+  await page.setViewportSize({ width: 1280, height: 900 });
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });

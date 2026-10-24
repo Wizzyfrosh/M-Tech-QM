@@ -2122,3 +2122,5 @@ body { background: var(--page); color: var(--ink); }
  .assignment-panel .button { white-space:normal; text-align:center; }
  .assignment-facts { flex-direction:column; gap:8px; }
 }
+.assignment-form .check-line { display:flex; align-items:flex-start; gap:10px; font-weight:400; }
+.assignment-form .check-line input { width:18px; height:18px; margin-top:2px; padding:0; flex-shrink:0; }

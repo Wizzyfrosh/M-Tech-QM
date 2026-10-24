@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Send } from "lucide-react";
 import type {
@@ -54,6 +54,12 @@ export function AssignmentEditor({
   const a = data.assignment;
   const dirty = JSON.stringify(draft) !== JSON.stringify(draftOf(a));
   const editable = a.status === "DRAFT";
+  useEffect(() => {
+    if (confirm)
+      document
+        .querySelector(".assignment-confirm")
+        ?.scrollIntoView({ block: "nearest" });
+  }, [confirm]);
   async function reload(page = submissions.page) {
     const [d, s] = await Promise.all([
       assignmentRequest<Detail>(`/api/assignments/${a.id}`),

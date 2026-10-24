@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import type { assignmentDetail } from "@/lib/assignments";
 import { assignmentDate, assignmentStatusLabel } from "@/lib/assignment-policy";
@@ -33,6 +33,12 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
     responseText !== (s?.responseText ?? "") ||
     projectUrl !== (s?.projectUrl ?? "") ||
     evidence !== (s?.evidenceUrls.join("\n") ?? "");
+  useEffect(() => {
+    if (confirm)
+      document
+        .querySelector(".assignment-confirm")
+        ?.scrollIntoView({ block: "nearest" });
+  }, [confirm]);
   async function act(action: "save" | "submit" | "edit") {
     setBusy(true);
     setError("");

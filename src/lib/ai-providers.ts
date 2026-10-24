@@ -1,5 +1,5 @@
 import { validateGeneratedQuestions, type GeneratedQuestion } from "./ai-quiz-policy";
-import { AccessError } from "./access";
+import { AccessError } from "./access-error";
 import { normalizeProviderError, providerHttpError } from "./ai-errors";
 
 export type AiProvider = "gemini" | "openrouter" | "grok";

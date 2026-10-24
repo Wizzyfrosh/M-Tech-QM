@@ -4,14 +4,8 @@ import { redirect } from "next/navigation";
 import { getAuth } from "./auth";
 import { getDb } from "./db";
 import { canSignIn, mayAccess } from "./policy";
-export class AccessError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
+import { AccessError } from "./access-error";
+export { AccessError } from "./access-error";
 /** Verified identity: pending students may open dashboard and account settings only. */
 export async function getSignedInActor(requestHeaders: Headers) {
   const session = await getAuth().api.getSession({ headers: requestHeaders });

@@ -36,6 +36,8 @@ model User {
   attempts          Attempt[]
   aiGenerations     AiGeneration[]
   notifications     Notification[]
+  assignments       Assignment[]
+  assignmentSubmissions AssignmentSubmission[]
 }
 
 model Session {
@@ -296,4 +298,66 @@ model Notification {
   @@unique([userId, eventKey])
   @@index([userId, createdAt])
   @@index([emailStatus, createdAt])
+}
+
+
+model Assignment {
+  id String @id @default(uuid())
+  createdBy String
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  title String @default("Untitled assignment")
+  instructions String @default("")
+  rubric String @default("")
+  resources String[] @default([])
+  submissionType String @default("PROJECT")
+  maxMarks Int @default(100)
+  deadline DateTime?
+  allowLate Boolean @default(false)
+  status String @default("DRAFT")
+  revision Int @default(0)
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  submissions AssignmentSubmission[]
+  @@index([createdBy, createdAt])
+  @@index([status, createdAt])
+}
+
+model AssignmentSubmission {
+  id String @id @default(uuid())
+  assignmentId String
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status String @default("DRAFT")
+  revision Int @default(0)
+  responseText String @default("")
+  projectUrl String @default("")
+  evidenceUrls String[] @default([])
+  version Int @default(0)
+  submittedAt DateTime?
+  late Boolean @default(false)
+  grade Int?
+  feedback String @default("")
+  changeRequest String @default("")
+  releasedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  versions AssignmentVersion[]
+  @@unique([assignmentId, userId])
+  @@index([assignmentId, status])
+  @@index([userId, updatedAt])
+}
+
+model AssignmentVersion {
+  id String @id @default(uuid())
+  submissionId String
+  submission AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  version Int
+  responseText String
+  projectUrl String
+  evidenceUrls String[]
+  submittedAt DateTime @default(now())
+  late Boolean
+  @@unique([submissionId, version])
 }

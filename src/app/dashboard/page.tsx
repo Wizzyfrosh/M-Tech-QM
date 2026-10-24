@@ -24,7 +24,7 @@ export default async function Dashboard() {
         <span className="eyebrow">EMAIL VERIFIED</span>
         <h1>Waiting for instructor approval</h1>
         <p>Hello {actor.name.split(" ")[0]}, your account is verified and your request has been received.</p>
-        <p>You can sign in at any time. Lessons, videos and quizzes will become available after your instructor approves your account.</p>
+        <p>You can sign in at any time. Lessons, quizzes and assignments will become available after your instructor approves your account.</p>
         <div className="button-row">
           <Link href="/account" className="button">Manage profile</Link>
           <Link href="/notifications" className="button">Notifications</Link>
@@ -81,7 +81,7 @@ export default async function Dashboard() {
           <p>
             {instructor
               ? "Students register themselves. Review verified accounts and approve access."
-              : "Your instructor will share a quiz link when your next assessment is ready."}
+              : "Open Assignments for practical work, or Quizzes for your next assessment."}
           </p>
           {instructor ? (
             <Link className="button primary" href="/instructor/students">
@@ -137,6 +137,7 @@ export default async function Dashboard() {
           ))}
         </div>
       )}
+      <section className="panel assignment-dashboard"><div><span className="eyebrow">PRACTICAL LEARNING</span><h2>Assignments</h2><p>{instructor ? "Publish standalone tasks, review student projects and release grades." : "Build Flutter projects, submit your work and read instructor feedback."}</p></div><Link className="button" href={instructor ? "/instructor/assignments" : "/student/assignments"}>Open assignments <ArrowRight size={16}/></Link></section>
       <div className="dashboard-grid">
         <section className="panel">
           <div className="panel-heading">

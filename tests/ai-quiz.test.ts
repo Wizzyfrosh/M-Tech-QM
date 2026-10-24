@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PGlite } from "@electric-sql/pglite";
@@ -29,7 +29,11 @@ const providerPayload = { candidates: [{ content: { parts: [{ text: JSON.stringi
 let db: PrismaClient;
 let lite: PGlite | undefined, socket: PGLiteSocketServer | undefined;
 let instructorId = "", quizId = "";
-const fakeFetch = (async () => Response.json(providerPayload)) as typeof fetch;
+const fakeFetch = (async (url: string, init: RequestInit) => {
+  expect(url).toContain("/gemini-3.5-flash-lite:generateContent");
+  expect(JSON.parse(init.body as string).generationConfig).not.toHaveProperty("temperature");
+  return Response.json(providerPayload);
+}) as typeof fetch;
 
 beforeAll(async () => {
   let url = process.env.TEST_DATABASE_URL;
@@ -107,5 +111,49 @@ describe("AI transcript question generation", () => {
     expect(JSON.stringify(rows)).not.toContain("block-scoped binding");
     await expect(generateQuizDrafts(db, instructorId, quizId,
       { transcript, count: 1, difficulty: "beginner" }, fakeFetch)).rejects.toMatchObject({ status: 429 });
+  });
+  it("continues after OpenRouter times out, records the working provider, and never saves generated content", async () => {
+    const owner = {id:instructorId};
+    await db.requestBucket.deleteMany(); // This suite owns a disposable local database.
+    const quiz = await db.quiz.create({data:{title:"Fallback sandbox",lessonLabel:"JS",createdBy:owner.id}});
+    process.env.GEMINI_API_KEY="fake-gemini";
+    process.env.OPENROUTER_API_KEY="fake-router";
+    process.env.XAI_API_KEY="fake-grok";
+    const log = vi.spyOn(console,"warn").mockImplementation(()=>{});
+    try {
+      for (const provider of ["auto", undefined] as const) {
+        const calls: string[] = [];
+        const fetcher = (async (url: string) => {
+          calls.push(url);
+          if(url.includes("googleapis")) return new Response("private",{status:429});
+          if(url.includes("openrouter")) throw new DOMException("secret-not-to-log", "TimeoutError");
+          return Response.json({choices:[{message:{content:JSON.stringify({questions:[generatedQuestion]})}}]});
+        }) as typeof fetch;
+        const result = await generateQuizDrafts(db,owner.id,quiz.id,{transcript,count:1,difficulty:"beginner",provider},fetcher);
+        expect(calls).toHaveLength(3);
+        expect(result).toMatchObject({provider:"grok",reviewRequired:true,generatedCount:1});
+      }
+      const records = await db.aiGeneration.findMany({where:{quizId:quiz.id}});
+      expect(records.every(row=>row.status==="SUCCEEDED"&&row.model.startsWith("grok:"))).toBe(true);
+      expect(await db.question.count({where:{quizId:quiz.id}})).toBe(0);
+      expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret-not-to-log|fake-router|block-scoped/);
+      expect(log.mock.calls).toContainEqual(["QMS_AI_PROVIDER_FAILED",{provider:"openrouter",code:"TIMEOUT"}]);
+      const explicit = vi.fn(async()=>{throw new DOMException("private","TimeoutError");});
+      await expect(generateQuizDrafts(db,owner.id,quiz.id,{transcript,count:1,difficulty:"beginner",provider:"openrouter"},explicit as typeof fetch)).rejects.toMatchObject({status:503});
+      expect(explicit).toHaveBeenCalledTimes(1);
+      const invalid = vi.fn(async()=>Response.json({candidates:[{content:{parts:[{text:JSON.stringify({questions:[{...generatedQuestion,sourceExcerpt:"fabricated unsupported excerpt"}]})}]}}]}));
+      await expect(generateQuizDrafts(db,owner.id,quiz.id,{transcript,count:1,difficulty:"beginner",provider:"auto"},invalid as typeof fetch)).rejects.toMatchObject({status:422});
+      expect(invalid).toHaveBeenCalledTimes(1);
+      await expect(generateQuizDrafts(db,owner.id,quiz.id,{transcript,count:1,difficulty:"beginner",provider:"auto"},
+        (async()=>new Response("private-account-information",{status:402})) as typeof fetch))
+        .rejects.toMatchObject({status:503,message:expect.stringContaining("insufficient credits")});
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private-account-information");
+    } finally {
+      log.mockRestore(); delete process.env.OPENROUTER_API_KEY; delete process.env.XAI_API_KEY;
+    }
+  });
+  it("accepts valid one-character answers without weakening source grounding", () => {
+    expect(validateGeneratedQuestions({questions:[{...generatedQuestion,options:["0","1","2","3"]}]},transcript,1)).toHaveLength(1);
+    expect(()=>validateGeneratedQuestions({questions:[{...generatedQuestion,options:[" ","1","2","3"]}]},transcript,1)).toThrow("AI_OUTPUT_INVALID");
   });
 });

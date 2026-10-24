@@ -9,7 +9,7 @@ export const aiDraftRequestSchema = z.object({
 
 const questionSchema = z.object({
   prompt: z.string().trim().min(12).max(4000),
-  options: z.array(z.string().trim().min(2).max(2000)).length(4),
+  options: z.array(z.string().trim().min(1).max(2000)).length(4),
   correctIndex: z.number().int().min(0).max(3),
   explanation: z.string().trim().min(12).max(4000),
   sourceExcerpt: z.string().trim().min(12).max(350),

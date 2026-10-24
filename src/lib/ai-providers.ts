@@ -1,13 +1,17 @@
 import { validateGeneratedQuestions, type GeneratedQuestion } from "./ai-quiz-policy";
 import { AccessError } from "./access";
+import { normalizeProviderError, providerHttpError } from "./ai-errors";
 
 export type AiProvider = "gemini" | "openrouter" | "grok";
 export const availableAiProviders: AiProvider[] = ["gemini","openrouter","grok"];
 export function aiProviderConfig(provider: AiProvider) {
-  if(provider === "gemini") return {
-    key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash-lite",
-    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
-  };
+  if(provider === "gemini") {
+    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+    return {
+      key: process.env.GEMINI_API_KEY, model,
+      endpoint: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    };
+  }
   if(provider === "openrouter") return {
     key: process.env.OPENROUTER_API_KEY,
     model: process.env.OPENROUTER_MODEL || "openrouter/free",
@@ -44,6 +48,7 @@ export async function fromChatCompletions(provider: Exclude<AiProvider,"gemini">
   transcript: string, count: number, difficulty: string, fetcher: typeof fetch): Promise<AiProviderResult> {
   const conf = aiProviderConfig(provider);
   if(!conf.key) throw new AccessError(503, provider + " is not configured.");
+  try {
   const response = await fetcher(conf.endpoint, {
     method:"POST",
     headers:{ "content-type":"application/json", authorization:`Bearer ${conf.key}` },
@@ -58,11 +63,10 @@ export async function fromChatCompletions(provider: Exclude<AiProvider,"gemini">
       response_format:{type:"json_schema",json_schema:{name:"quiz_questions",strict:true,schema:structure}},
       ...(provider==="openrouter"?{provider:{require_parameters:true}}:{}),
     }),
-    signal:AbortSignal.timeout(25000),
+    signal:AbortSignal.timeout(40000),
     cache:"no-store",
   });
-  if([402,429,500,502,503,504].includes(response.status)) throw new AccessError(503, provider + " is temporarily unavailable or out of credits.");
-  if(!response.ok) throw new AccessError(503, "AI provider rejected the request. Check its model and credentials.");
+  if(!response.ok) throw providerHttpError(provider, response.status);
   let payload: {choices?:{message?:{content?:string}}[];usage?:{prompt_tokens?:number;completion_tokens?:number}};
   const reader = response.body?.getReader();
   if(!reader) throw new AccessError(503, "The AI provider returned an empty response.");
@@ -85,4 +89,7 @@ export async function fromChatCompletions(provider: Exclude<AiProvider,"gemini">
     inputTokens:payload.usage?.prompt_tokens??null,
     outputTokens:payload.usage?.completion_tokens??null,
   };
+  } catch (error) {
+    throw normalizeProviderError(provider, error);
+  }
 }

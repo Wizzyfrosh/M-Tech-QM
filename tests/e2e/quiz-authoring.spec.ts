@@ -27,6 +27,7 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     page.getByText("Loading quizzes…", { exact: true }),
   ).not.toBeVisible();
   await page.getByRole("button", { name: "Create quiz", exact: true }).click();
+  await expect(page).toHaveURL(/\/instructor\/quizzes\/[0-9a-f-]{36}$/);
   await expect(
     page.getByRole("heading", { name: "Untitled quiz", exact: true }),
   ).toBeVisible();
@@ -105,9 +106,10 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const editor = await (
-    await page.request.get(`/api/instructor/quizzes/${id}`)
-  ).json();
+  const editorResponse = await page.request.get(`/api/instructor/quizzes/${id}`);
+  expect(editorResponse.ok(), await editorResponse.text()).toBe(true);
+  const editor = await editorResponse.json();
+  expect(editor.shareSlug).toEqual(expect.any(String));
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });

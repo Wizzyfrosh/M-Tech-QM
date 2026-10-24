@@ -193,6 +193,7 @@ export function AssignmentEditor({
           <label>
             Instructions
             <textarea
+              aria-label="Instructions"
               rows={9}
               maxLength={20000}
               value={draft.instructions}
@@ -204,6 +205,7 @@ export function AssignmentEditor({
           <label>
             Marking guidelines
             <textarea
+              aria-label="Marking guidelines"
               rows={5}
               maxLength={5000}
               value={draft.rubric}
@@ -254,6 +256,7 @@ export function AssignmentEditor({
           <label>
             Resource links (one HTTPS link per line, up to 5)
             <textarea
+              aria-label="Resource links (one HTTPS link per line, up to 5)"
               rows={3}
               value={draft.resources.join("\n")}
               onChange={(e) => field("resources", e.target.value.split("\n"))}

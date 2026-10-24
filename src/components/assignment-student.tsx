@@ -159,6 +159,11 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
               ? "Written response"
               : "Explain your work"}
             <textarea
+              aria-label={
+                a.submissionType === "TEXT"
+                  ? "Written response"
+                  : "Explain your work"
+              }
               rows={9}
               maxLength={20000}
               value={responseText}
@@ -210,6 +215,7 @@ export function AssignmentStudent({ initial }: { initial: Detail }) {
           <label>
             Evidence links (optional, one HTTPS link per line, up to 5)
             <textarea
+              aria-label="Evidence links (optional, one HTTPS link per line, up to 5)"
               rows={3}
               value={evidence}
               onChange={(e) => {

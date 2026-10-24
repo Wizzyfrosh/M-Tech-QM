@@ -142,6 +142,7 @@ export function AssignmentReview({ initial }: { initial: Submission }) {
         <label>
           Feedback
           <textarea
+            aria-label="Feedback"
             rows={7}
             maxLength={10000}
             value={feedback}

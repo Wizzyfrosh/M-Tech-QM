@@ -1661,6 +1661,30 @@ select:disabled {
   background: var(--success-surface);
   border-color: var(--success-border);
 }
+.result-options li > p {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.result-options li > strong {
+  max-width: 100%;
+}
+.result-options li.correct-option {
+  color: var(--success);
+}
+.result-options li.incorrect-option {
+  color: var(--danger);
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
+}
+.result-options li.incorrect-option > strong {
+  color: var(--danger);
+}
+.result-options li.correct-option > span,
+.result-options li.incorrect-option > span {
+  color: inherit;
+  background: var(--surface);
+}
 .answer-explanation {
   border-top: 1px solid var(--border);
   padding-top: 19px;

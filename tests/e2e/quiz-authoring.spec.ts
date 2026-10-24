@@ -272,7 +272,8 @@ test("instructor saves, previews, publishes and archives a quiz without leaking 
   await expect(
     page.getByRole("checkbox", { name: /I reviewed this question/ }),
   ).not.toBeChecked();
-  await page.getByRole("button", { name: "Delete draft", exact: true }).click();
+  await page.getByRole("button", { name: "Delete quiz permanently", exact: true }).click();
+  await page.getByLabel("Type the quiz title to confirm").fill("JavaScript foundations (copy)");
   await page
     .getByRole("button", { name: "Confirm delete", exact: true })
     .click();
